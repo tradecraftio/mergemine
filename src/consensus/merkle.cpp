@@ -42,6 +42,12 @@
        root.
 */
 
+typedef unsigned merklecomputationopts;
+static const merklecomputationopts MERKLE_COMPUTATION_MUTABLE = 0x1;
+
+static inline uint256 MerkleHash_Hash256(const uint256& left, const uint256& right) {
+    return Hash(left, right);
+}
 
 uint256 ComputeMerkleRoot(std::vector<uint256> hashes, bool* mutated) {
     bool mutation = false;
@@ -97,7 +103,7 @@ uint256 BlockWitnessMerkleRoot(const CBlock& block, bool* mutated)
 }
 
 /* This implements a constant-space merkle root/path calculator, limited to 2^32 leaves. */
-static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t leaf_pos, std::vector<uint256>* path)
+static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t leaf_pos, std::vector<uint256>* path, merklecomputationopts flags)
 {
     if (path) path->clear();
     Assume(leaves.size() <= UINT32_MAX);
@@ -106,6 +112,8 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
         if (proot) *proot = uint256();
         return;
     }
+    bool is_mutable = (flags & MERKLE_COMPUTATION_MUTABLE) != 0;
+    auto MerkleHash = MerkleHash_Hash256;
     bool mutated = false;
     // count is the number of leaves processed so far.
     uint32_t count = 0;
@@ -136,7 +144,7 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
                 }
             }
             mutated |= (inner[level] == h);
-            h = Hash(inner[level], h);
+            h = MerkleHash(inner[level], h);
         }
         // Store the resulting hash at inner position level.
         inner[level] = h;
@@ -159,10 +167,12 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
         // If we reach this point, h is an inner value that is not the top.
         // We combine it with itself (Bitcoin's special rule for odd levels in
         // the tree) to produce a higher level one.
-        if (path && matchh) {
+        if (is_mutable && path && matchh) {
             path->push_back(h);
         }
-        h = Hash(h, h);
+        if (is_mutable) {
+            h = MerkleHash(h, h);
+        }
         // Increment count to the value it would have if two entries at this
         // level had existed.
         count += ((uint32_t{1}) << level);
@@ -177,7 +187,7 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
                     matchh = true;
                 }
             }
-            h = Hash(inner[level], h);
+            h = MerkleHash(inner[level], h);
             level++;
         }
     }
@@ -188,7 +198,7 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
 
 std::vector<uint256> ComputeMerklePath(const std::vector<uint256>& leaves, uint32_t position) {
     std::vector<uint256> ret;
-    MerkleComputation(leaves, nullptr, nullptr, position, &ret);
+    MerkleComputation(leaves, nullptr, nullptr, position, &ret, MERKLE_COMPUTATION_MUTABLE);
     return ret;
 }
 
