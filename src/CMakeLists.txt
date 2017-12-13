@@ -148,6 +148,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   common/system.cpp
   common/url.cpp
   compressor.cpp
+  consensus/merkleproof.cpp
   core_read.cpp
   core_write.cpp
   deploymentinfo.cpp
