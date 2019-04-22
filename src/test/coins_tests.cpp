@@ -58,7 +58,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlock) override
+    bool BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlock, const BlockFinalTxEntry& final_tx) override
     {
         for (auto it{cursor.Begin()}; it != cursor.End(); it = cursor.NextAndMaybeErase(*it)){
             if (it->second.IsDirty()) {
@@ -653,7 +653,7 @@ static void WriteCoinsViewEntry(CCoinsView& view, const MaybeCoin& cache_coin)
     CCoinsMap map{0, CCoinsMap::hasher{}, CCoinsMap::key_equal{}, &resource};
     auto usage{cache_coin ? InsertCoinsMapEntry(map, sentinel, *cache_coin) : 0};
     auto cursor{CoinsViewCacheCursor(usage, sentinel, map, /*will_erase=*/true)};
-    BOOST_CHECK(view.BatchWrite(cursor, {}));
+    BOOST_CHECK(view.BatchWrite(cursor, {}, {}));
 }
 
 class SingleEntryCacheTest

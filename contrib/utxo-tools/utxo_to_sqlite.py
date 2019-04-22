@@ -132,6 +132,17 @@ def main():
     version = int.from_bytes(f.read(2), 'little')
     network_magic = f.read(4)
     block_hash = f.read(32)
+    if block_hash[31] & 0x80:
+        block_hash = block_hash[:31] + bytes([block_hash[31] ^ 0x80])
+        flags = int.from_bytes(f.read(1), 'little')
+        if flags & 0x01:
+            final_tx_size = read_varint(f)
+            if final_tx_size != 0:
+                final_tx_hash = f.read(32)
+            flags ^= 0x01
+        if flags != 0:
+            print(f"Error: provided input file '{args.infile}' has unknown flags {flags}.")
+            sys.exit(1)
     num_utxos = int.from_bytes(f.read(8), 'little')
     if magic_bytes != UTXO_DUMP_MAGIC:
         print(f"Error: provided input file '{args.infile}' is not an UTXO dump.")

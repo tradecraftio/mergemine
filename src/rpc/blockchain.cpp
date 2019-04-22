@@ -70,7 +70,7 @@ using node::NodeContext;
 using node::SnapshotMetadata;
 using util::MakeUnorderedList;
 
-std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*>
+std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*, BlockFinalTxEntry>
 PrepareUTXOSnapshot(
     Chainstate& chainstate,
     const std::function<void()>& interruption_point = {})
@@ -81,6 +81,7 @@ UniValue WriteUTXOSnapshot(
     CCoinsViewCursor* pcursor,
     CCoinsStats* maybe_stats,
     const CBlockIndex* tip,
+    const BlockFinalTxEntry& final_tx,
     AutoFile& afile,
     const fs::path& path,
     const fs::path& temppath,
@@ -2979,6 +2980,11 @@ static RPCHelpMan dumptxoutset()
                     {RPCResult::Type::STR, "path", "the absolute path that the snapshot was written to"},
                     {RPCResult::Type::STR_HEX, "txoutset_hash", "the hash of the UTXO set contents"},
                     {RPCResult::Type::NUM, "nchaintx", "the number of transactions in the chain up to and including the base block"},
+                    {RPCResult::Type::OBJ, "final_tx", /*optional=*/true, "(Only if block-final transaction information is available)",
+                    {
+                        {RPCResult::Type::STR_HEX, "hash", "The block-final transaction hash."},
+                        {RPCResult::Type::NUM, "size", "The number of spendable outputs in the block-final transaction."},
+                    }},
                 }
         },
         RPCExamples{
@@ -3066,6 +3072,7 @@ static RPCHelpMan dumptxoutset()
     }
 
     Chainstate* chainstate;
+    BlockFinalTxEntry final_tx;
     std::unique_ptr<CCoinsViewCursor> cursor;
     CCoinsStats stats;
     {
@@ -3087,11 +3094,11 @@ static RPCHelpMan dumptxoutset()
             LogWarning("dumptxoutset failed to roll back to requested height, reverting to tip.\n");
             throw JSONRPCError(RPC_MISC_ERROR, "Could not roll back to requested height.");
         } else {
-            std::tie(cursor, stats, tip) = PrepareUTXOSnapshot(*chainstate, node.rpc_interruption_point);
+            std::tie(cursor, stats, tip, final_tx) = PrepareUTXOSnapshot(*chainstate, node.rpc_interruption_point);
         }
     }
 
-    UniValue result = WriteUTXOSnapshot(*chainstate, cursor.get(), &stats, tip, afile, path, temppath, node.rpc_interruption_point);
+    UniValue result = WriteUTXOSnapshot(*chainstate, cursor.get(), &stats, tip, final_tx, afile, path, temppath, node.rpc_interruption_point);
     fs::rename(temppath, path);
 
     result.pushKV("path", path.utf8string());
@@ -3100,7 +3107,7 @@ static RPCHelpMan dumptxoutset()
     };
 }
 
-std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*>
+std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*, BlockFinalTxEntry>
 PrepareUTXOSnapshot(
     Chainstate& chainstate,
     const std::function<void()>& interruption_point)
@@ -3108,6 +3115,7 @@ PrepareUTXOSnapshot(
     std::unique_ptr<CCoinsViewCursor> pcursor;
     std::optional<CCoinsStats> maybe_stats;
     const CBlockIndex* tip;
+    BlockFinalTxEntry final_tx;
 
     {
         // We need to lock cs_main to ensure that the coinsdb isn't written to
@@ -3133,9 +3141,10 @@ PrepareUTXOSnapshot(
 
         pcursor = chainstate.CoinsDB().Cursor();
         tip = CHECK_NONFATAL(chainstate.m_blockman.LookupBlockIndex(maybe_stats->hashBlock));
+        final_tx = chainstate.CoinsDB().GetFinalTx();
     }
 
-    return {std::move(pcursor), *CHECK_NONFATAL(maybe_stats), tip};
+    return {std::move(pcursor), *CHECK_NONFATAL(maybe_stats), tip, final_tx};
 }
 
 UniValue WriteUTXOSnapshot(
@@ -3143,6 +3152,7 @@ UniValue WriteUTXOSnapshot(
     CCoinsViewCursor* pcursor,
     CCoinsStats* maybe_stats,
     const CBlockIndex* tip,
+    const BlockFinalTxEntry& final_tx,
     AutoFile& afile,
     const fs::path& path,
     const fs::path& temppath,
@@ -3152,7 +3162,7 @@ UniValue WriteUTXOSnapshot(
         tip->nHeight, tip->GetBlockHash().ToString(),
         fs::PathToString(path), fs::PathToString(temppath)));
 
-    SnapshotMetadata metadata{chainstate.m_chainman.GetParams().MessageStart(), tip->GetBlockHash(), maybe_stats->coins_count};
+    SnapshotMetadata metadata{chainstate.m_chainman.GetParams().MessageStart(), tip->GetBlockHash(), final_tx, maybe_stats->coins_count};
 
     afile << metadata;
 
@@ -3211,6 +3221,12 @@ UniValue WriteUTXOSnapshot(
     result.pushKV("path", path.utf8string());
     result.pushKV("txoutset_hash", maybe_stats->hashSerialized.ToString());
     result.pushKV("nchaintx", tip->m_chain_tx_count);
+    if (!final_tx.IsNull()) {
+        UniValue entry(UniValue::VOBJ);
+        entry.pushKV("hash", final_tx.hash.ToString());
+        entry.pushKV("size", (int64_t)final_tx.size);
+        result.pushKV("final_tx", entry);
+    }
     return result;
 }
 
@@ -3221,8 +3237,8 @@ UniValue CreateUTXOSnapshot(
     const fs::path& path,
     const fs::path& tmppath)
 {
-    auto [cursor, stats, tip]{WITH_LOCK(::cs_main, return PrepareUTXOSnapshot(chainstate, node.rpc_interruption_point))};
-    return WriteUTXOSnapshot(chainstate, cursor.get(), &stats, tip, afile, path, tmppath, node.rpc_interruption_point);
+    auto [cursor, stats, tip, final_tx]{WITH_LOCK(::cs_main, return PrepareUTXOSnapshot(chainstate, node.rpc_interruption_point))};
+    return WriteUTXOSnapshot(chainstate, cursor.get(), &stats, tip, final_tx, afile, path, tmppath, node.rpc_interruption_point);
 }
 
 static RPCHelpMan loadtxoutset()
