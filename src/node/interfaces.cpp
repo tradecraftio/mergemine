@@ -917,6 +917,18 @@ public:
         return GetWitnessCommitmentIndex(m_block_template->block);
     }
 
+    std::optional<CTransactionRef> getFinalTx() override
+    {
+        return m_block_template->has_block_final_tx
+            ? std::optional<CTransactionRef>(m_block_template->block.vtx.back())
+            : std::nullopt;
+    }
+
+    std::map<COutPoint, Coin> getBlockFinalTxCoinMap() override
+    {
+        return m_block_template->block_final_tx_coin_map;
+    }
+
     std::vector<uint256> getCoinbaseMerklePath() override
     {
         return TransactionMerklePath(m_block_template->block, 0);

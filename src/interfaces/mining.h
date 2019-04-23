@@ -5,6 +5,7 @@
 #ifndef BITCOIN_INTERFACES_MINING_H
 #define BITCOIN_INTERFACES_MINING_H
 
+#include <coins.h>                  // for Coin
 #include <consensus/amount.h>       // for CAmount
 #include <interfaces/types.h>       // for BlockRef
 #include <node/types.h>             // for BlockCreateOptions
@@ -42,6 +43,9 @@ public:
     virtual CTransactionRef getCoinbaseTx() = 0;
     virtual std::vector<unsigned char> getCoinbaseCommitment() = 0;
     virtual int getWitnessCommitmentIndex() = 0;
+
+    virtual std::optional<CTransactionRef> getFinalTx() = 0;
+    virtual std::map<COutPoint, Coin> getBlockFinalTxCoinMap() = 0;
 
     /**
      * Compute merkle path to the coinbase transaction
