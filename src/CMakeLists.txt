@@ -290,6 +290,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   rpc/external_signer.cpp
   rpc/fees.cpp
   rpc/mempool.cpp
+  rpc/merkleproof.cpp
   rpc/mining.cpp
   rpc/net.cpp
   rpc/node.cpp
