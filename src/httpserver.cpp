@@ -206,32 +206,33 @@ public:
 //! Track active requests
 static HTTPRequestTracker g_requests;
 
-/** Check if a network address is allowed to access the HTTP server */
-static bool ClientAllowed(const CNetAddr& netaddr)
+/** Check if a network address is allowed to access the server */
+bool ClientAllowed(const std::vector<CSubNet>& allowed_subnets, const CNetAddr& netaddr)
 {
     if (!netaddr.IsValid())
         return false;
-    for(const CSubNet& subnet : rpc_allow_subnets)
+    for(const CSubNet& subnet : allowed_subnets)
         if (subnet.Match(netaddr))
             return true;
     return false;
 }
 
 /** Initialize ACL list for HTTP server */
-static bool InitHTTPAllowList()
+bool InitSubnetAllowList(const std::string which, std::vector<CSubNet>& allowed_subnets)
 {
-    rpc_allow_subnets.clear();
-    rpc_allow_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
-    rpc_allow_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
-    for (const std::string& strAllow : gArgs.GetArgs("-rpcallowip")) {
+    allowed_subnets.clear();
+    allowed_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
+    allowed_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
+    const std::string opt_allowip = "-" + which + "allowip";
+    for (const std::string& strAllow : gArgs.GetArgs(opt_allowip)) {
         const CSubNet subnet{LookupSubNet(strAllow)};
         if (!subnet.IsValid()) {
             uiInterface.ThreadSafeMessageBox(
-                Untranslated(strprintf("Invalid -rpcallowip subnet specification: %s. Valid are a single IP (e.g. 1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. 1.2.3.4/24).", strAllow)),
+                Untranslated(strprintf("Invalid %s subnet specification: %s. Valid are a single IP (e.g. 1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. 1.2.3.4/24).", opt_allowip, strAllow)),
                 "", CClientUIInterface::MSG_ERROR);
             return false;
         }
-        rpc_allow_subnets.push_back(subnet);
+        allowed_subnets.push_back(subnet);
     }
     std::string strAllowed;
     for (const CSubNet& subnet : rpc_allow_subnets)
@@ -287,7 +288,7 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
     auto hreq{std::make_unique<HTTPRequest>(req, *static_cast<const util::SignalInterrupt*>(arg))};
 
     // Early address-based allow check
-    if (!ClientAllowed(hreq->GetPeer())) {
+    if (!ClientAllowed(rpc_allow_subnets, hreq->GetPeer())) {
         LogDebug(BCLog::HTTP, "HTTP request from %s rejected: Client network is not allowed RPC access\n",
                  hreq->GetPeer().ToStringAddrPort());
         hreq->WriteReply(HTTP_FORBIDDEN);
@@ -355,29 +356,30 @@ static void ThreadHTTP(struct event_base* base)
     LogDebug(BCLog::HTTP, "Exited http event loop\n");
 }
 
-/** Bind HTTP server to specified addresses */
-static bool HTTPBindAddresses(struct evhttp* http)
+/** Determine what addresses to bind to */
+bool InitEndpointList(const std::string& which, uint16_t default_port, std::vector<std::pair<std::string, uint16_t>>& endpoints)
 {
-    uint16_t http_port{static_cast<uint16_t>(gArgs.GetIntArg("-rpcport", BaseParams().RPCPort()))};
-    std::vector<std::pair<std::string, uint16_t>> endpoints;
+    endpoints.clear();
 
     // Determine what addresses to bind to
     // To prevent misconfiguration and accidental exposure of the RPC
     // interface, require -rpcallowip and -rpcbind to both be specified
     // together. If either is missing, ignore both values, bind to localhost
     // instead, and log warnings.
-    if (gArgs.GetArgs("-rpcallowip").empty() || gArgs.GetArgs("-rpcbind").empty()) { // Default to loopback if not allowing external IPs
-        endpoints.emplace_back("::1", http_port);
-        endpoints.emplace_back("127.0.0.1", http_port);
-        if (!gArgs.GetArgs("-rpcallowip").empty()) {
-            LogPrintf("WARNING: option -rpcallowip was specified without -rpcbind; this doesn't usually make sense\n");
+    const std::string opt_allowip = "-" + which + "allowip";
+    const std::string opt_bind = "-" + which + "bind";
+    if (gArgs.GetArgs(opt_allowip).empty() || gArgs.GetArgs(opt_bind).empty()) { // Default to loopback if not allowing external IPs
+        endpoints.emplace_back("::1", default_port);
+        endpoints.emplace_back("127.0.0.1", default_port);
+        if (!gArgs.GetArgs(opt_allowip).empty()) {
+            LogPrintf("WARNING: option %s was specified without %s; this doesn't usually make sense\n", opt_allowip, opt_bind);
         }
-        if (!gArgs.GetArgs("-rpcbind").empty()) {
-            LogPrintf("WARNING: option -rpcbind was ignored because -rpcallowip was not specified, refusing to allow everyone to connect\n");
+        if (!gArgs.GetArgs(opt_bind).empty()) {
+            LogPrintf("WARNING: option %s was ignored because %s was not specified, refusing to allow everyone to connect\n", opt_bind, opt_allowip);
         }
     } else { // Specific bind addresses
-        for (const std::string& strRPCBind : gArgs.GetArgs("-rpcbind")) {
-            uint16_t port{http_port};
+        for (const std::string& strRPCBind : gArgs.GetArgs(opt_bind)) {
+            uint16_t port{default_port};
             std::string host;
             if (!SplitHostPort(strRPCBind, port, host)) {
                 LogError("%s\n", InvalidPortErrMsg("-rpcbind", strRPCBind).original);
@@ -386,6 +388,19 @@ static bool HTTPBindAddresses(struct evhttp* http)
             endpoints.emplace_back(host, port);
         }
     }
+
+    return !endpoints.empty();
+}
+
+/** Bind HTTP server to specified addresses */
+static bool HTTPBindAddresses(struct evhttp* http)
+{
+    uint16_t default_port{static_cast<uint16_t>(gArgs.GetIntArg("-rpcport", BaseParams().RPCPort()))};
+    std::vector<std::pair<std::string, uint16_t>> endpoints;
+
+    // Determine what addresses to bind to
+    if (!InitEndpointList("rpc", default_port, endpoints))
+        return false;
 
     // Bind addresses
     for (std::vector<std::pair<std::string, uint16_t> >::iterator i = endpoints.begin(); i != endpoints.end(); ++i) {
@@ -440,8 +455,13 @@ static void libevent_log_cb(int severity, const char *msg)
 
 bool InitHTTPServer(const util::SignalInterrupt& interrupt)
 {
-    if (!InitHTTPAllowList())
+    if (!InitSubnetAllowList("rpc", rpc_allow_subnets))
         return false;
+
+    std::string strAllowed;
+    for (const CSubNet& subnet : rpc_allow_subnets)
+        strAllowed += subnet.ToString() + " ";
+    LogDebug(BCLog::HTTP, "Allowing HTTP connections from: %s\n", strAllowed);
 
     // Redirect libevent's logging to our own log
     event_set_log_callback(&libevent_log_cb);
