@@ -10,6 +10,9 @@
 /** The minimum difficulty for stratum mining clients.  A difficulty setting of 10^3 would take a 1Thps miner ~4 seconds to find a share. */
 const double DEFAULT_MINING_DIFFICULTY = 1e3;
 
+/** Wake up the block watcher thread. */
+void WakeUpBlockWatcherThread();
+
 /** Configure the stratum server. */
 bool InitStratumServer(node::NodeContext& node);
 

@@ -19,6 +19,7 @@
 #include <netbase.h>
 #include <net.h>
 #include <node/context.h>
+#include <node/kernel_notifications.h>
 #include <node/miner.h>
 #include <pow.h>
 #include <random.h>
@@ -39,6 +40,7 @@
 
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <boost/algorithm/string.hpp> // for boost::trim
@@ -210,6 +212,9 @@ static double g_min_difficulty = DEFAULT_MINING_DIFFICULTY;
 //! The time at which the statum server started, used to calculate uptime.
 static int64_t g_start_time = 0;
 
+//! Critical seciton guarding access to any of the stratum global state
+static RecursiveMutex cs_stratum;
+
 //! Reference to the NodeContext for the process
 static node::NodeContext* g_context;
 
@@ -227,6 +232,9 @@ static std::map<std::string, std::function<UniValue(StratumClient&, const UniVal
 
 //! A mapping of job_id -> work templates
 static std::map<JobId, StratumWork> work_templates;
+
+//! A thread to watch for new blocks and send mining notifications
+static std::thread block_watcher_thread;
 
 std::string HexInt4(uint32_t val)
 {
@@ -286,7 +294,7 @@ static double ClampDifficulty(const StratumClient& client, double diff)
     return diff;
 }
 
-std::string GetWorkUnit(StratumClient& client)
+std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     if (!g_context) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Error: Node context not found");
@@ -473,7 +481,7 @@ std::string GetWorkUnit(StratumClient& client)
          + mining_notify.write()  + "\n";
 }
 
-bool SubmitBlock(StratumClient& client, const JobId& job_id, const StratumWork& current_work, std::vector<unsigned char> extranonce2, uint32_t nTime, uint32_t nNonce)
+bool SubmitBlock(StratumClient& client, const JobId& job_id, const StratumWork& current_work, std::vector<unsigned char> extranonce2, uint32_t nTime, uint32_t nNonce) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     if (current_work.GetBlock().vtx.empty()) {
         const std::string msg("SubmitBlock: no transactions in block template; unable to submit work");
@@ -575,7 +583,7 @@ void BoundParams(const std::string& method, const UniValue& params, size_t min, 
     }
 }
 
-UniValue stratum_mining_subscribe(StratumClient& client, const UniValue& params)
+UniValue stratum_mining_subscribe(StratumClient& client, const UniValue& params) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     const std::string method("mining.subscribe");
     BoundParams(method, params, 0, 2);
@@ -602,7 +610,7 @@ UniValue stratum_mining_subscribe(StratumClient& client, const UniValue& params)
     return ret;
 }
 
-UniValue stratum_mining_authorize(StratumClient& client, const UniValue& params)
+UniValue stratum_mining_authorize(StratumClient& client, const UniValue& params) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     const std::string method("mining.authorize");
     BoundParams(method, params, 1, 2);
@@ -651,7 +659,7 @@ UniValue stratum_mining_authorize(StratumClient& client, const UniValue& params)
     return true;
 }
 
-UniValue stratum_mining_submit(StratumClient& client, const UniValue& params)
+UniValue stratum_mining_submit(StratumClient& client, const UniValue& params) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     // m_last_recv_time was set to the current time when we started processing
     // this message.  We set m_last_submit_time to the current time so we know
@@ -684,6 +692,7 @@ UniValue stratum_mining_submit(StratumClient& client, const UniValue& params)
 /** Callback to read from a stratum connection. */
 static void stratum_read_cb(bufferevent *bev, void *ctx)
 {
+    LOCK(cs_stratum);
     // Lookup the client record for this connection
     if (!subscriptions.count(bev)) {
         LogDebug(BCLog::STRATUM, "Received read notification for unknown stratum connection 0x%x\n", (size_t)bev);
@@ -778,6 +787,7 @@ static void stratum_read_cb(bufferevent *bev, void *ctx)
 /** Callback to handle unrecoverable errors in a stratum link. */
 static void stratum_event_cb(bufferevent *bev, short what, void *ctx)
 {
+    LOCK(cs_stratum);
     // Fetch the return address for this connection, for the debug log.
     std::string from("UNKNOWN");
     if (!subscriptions.count(bev)) {
@@ -808,6 +818,7 @@ static void stratum_event_cb(bufferevent *bev, short what, void *ctx)
 /** Callback to accept a stratum connection. */
 static void stratum_accept_conn_cb(evconnlistener *listener, evutil_socket_t fd, sockaddr *address, int socklen, void *ctx)
 {
+    LOCK(cs_stratum);
     // Parse the return address
     CService from;
     socklen_t address_len = sizeof(*address);
@@ -840,7 +851,7 @@ static void stratum_accept_conn_cb(evconnlistener *listener, evutil_socket_t fd,
 }
 
 /** Setup the stratum connection listening services */
-static bool StratumBindAddresses(event_base* base, node::NodeContext& node)
+static bool StratumBindAddresses(event_base* base, node::NodeContext& node) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     const ArgsManager& args = *Assert(node.args);
     int defaultPort = args.GetIntArg("-stratumport", BaseParams().StratumPort());
@@ -874,9 +885,104 @@ static bool StratumBindAddresses(event_base* base, node::NodeContext& node)
     return !bound_listeners.empty();
 }
 
+/** Watches for new blocks and send updated work to miners. */
+static std::atomic<bool> g_shutdown = false;
+void BlockWatcher()
+{
+    std::chrono::steady_clock::time_point checktxtime = std::chrono::steady_clock::now();
+    unsigned int txns_updated_last = 0;
+    while (true) {
+        if (g_context && g_context->notifications) {
+            // Use the notifications object to wait for a new block.
+            auto& notifications = *g_context->notifications;
+            WAIT_LOCK(notifications.m_tip_block_mutex, lock);
+            checktxtime += std::chrono::seconds(15);
+            if (notifications.m_tip_block_cv.wait_until(lock, checktxtime) == std::cv_status::timeout) {
+                // Timeout: Check to see if mempool was updated.
+                unsigned int txns_updated_next = g_context->mempool ? g_context->mempool->GetTransactionsUpdated() : txns_updated_last;
+                if (txns_updated_last == txns_updated_next)
+                    continue;
+                txns_updated_last = txns_updated_next;
+            }
+        } else {
+            // Fallback to a 1 second timeout if notifications are not available.
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        LOCK(cs_stratum);
+
+        if (g_shutdown) {
+            break;
+        }
+
+        CBlockIndex* tip = nullptr;
+        if (g_context && g_context->chainman) {
+            LOCK(g_context->chainman->GetMutex());
+            tip = g_context->chainman->ActiveChain().Tip();
+        }
+
+        // Either new block, or updated transactions.  Either way,
+        // send updated work to miners.
+        for (auto& subscription : subscriptions) {
+            bufferevent* bev = subscription.first;
+            evbuffer *output = bufferevent_get_output(bev);
+            StratumClient& client = subscription.second;
+            // Ignore clients that aren't authorized yet.
+            if (!client.m_authorized) {
+                continue;
+            }
+            // Ignore clients that are already working on the new block.
+            // Typically this is just the miner that found the block, who was
+            // immediately sent a work update.  This check avoids sending that
+            // work notification again, moments later.  Due to race conditions
+            // there could be more than one miner that have already received an
+            // update, however.
+            if (client.m_last_tip == tip) {
+                continue;
+            }
+            // Get new work
+            std::string data;
+            try {
+                data = GetWorkUnit(client);
+            } catch (const UniValue& objError) {
+                data = JSONRPCReplyObj(NullUniValue, objError, NullUniValue, JSONRPCVersion::V1_LEGACY).write() + "\n";
+            } catch (const std::exception& e) {
+                // Some sort of error.  Ignore.
+                std::string msg = strprintf("Error generating updated work for stratum client: %s", e.what());
+                LogDebug(BCLog::STRATUM, "%s\n", msg);
+                data = JSONRPCReplyObj(NullUniValue, JSONRPCError(RPC_INTERNAL_ERROR, msg), NullUniValue, JSONRPCVersion::V1_LEGACY).write() + "\n";
+            }
+            // Send the new work to the client
+            LogDebug(BCLog::STRATUM, "Sending updated stratum work unit to %s : %s", client.GetPeer().ToStringAddrPort(), data);
+            if (evbuffer_add(output, data.data(), data.size())) {
+                LogDebug(BCLog::STRATUM, "Sending stratum work unit failed. (Reason: %d, '%s')\n", errno, evutil_socket_error_to_string(errno));
+            }
+        }
+    }
+}
+
+void WakeUpBlockWatcherThread()
+{
+    // The block watcher is waiting for a new block using the kernel notification system.  The only
+    // way to wake it up is to send a notification of a new block. In principle this should be done
+    // only when there is a new block, users of this notification are supposed to check themselves
+    // if the current tip has changed from what they last saw.  So this *should* be a safe no-op if
+    // we're just using it to wake up the block watcher.
+    //
+    // FIXME: Find a way to get the block watcher to depend on two notification sources, so we can
+    //        have a separate wake-up event just for it.
+    if (g_context && g_context->notifications) {
+        auto& notifications = *g_context->notifications;
+        WAIT_LOCK(notifications.m_tip_block_mutex, lock);
+        notifications.m_tip_block_cv.notify_all();
+    }
+}
+
 /** Configure the stratum server */
 bool InitStratumServer(node::NodeContext& node)
 {
+    LOCK(cs_stratum);
+
     std::optional<std::string> mindiff = gArgs.GetArg("-miningmindifficulty");
     if (mindiff) {
         double diff = std::stod(*mindiff);
@@ -917,22 +1023,36 @@ bool InitStratumServer(node::NodeContext& node)
     stratum_method_dispatch["mining.authorize"] = stratum_mining_authorize;
     stratum_method_dispatch["mining.submit"] = stratum_mining_submit;
 
+    // Start thread to wait for block notifications and send updated
+    // work to miners.
+    block_watcher_thread = std::thread(BlockWatcher);
+
     return true;
 }
 
 /** Interrupt the stratum server connections */
 void InterruptStratumServer()
 {
+    LOCK(cs_stratum);
     // Stop listening for connections on stratum sockets
     for (const auto& binding : bound_listeners) {
         LogDebug(BCLog::STRATUM, "Interrupting stratum service on %s\n", binding.second.ToStringAddrPort());
         evconnlistener_disable(binding.first);
     }
+    // Tell the block watching thread to stop
+    g_shutdown = true;
 }
 
 /** Cleanup stratum server network connections and free resources. */
 void StopStratumServer()
 {
+    g_shutdown = true;
+    /* Wake up the block watcher thread. */
+    WakeUpBlockWatcherThread();
+    if (block_watcher_thread.joinable()) {
+        block_watcher_thread.join();
+    }
+    LOCK(cs_stratum);
     /* Tear-down active connections. */
     for (const auto& subscription : subscriptions) {
         LogDebug(BCLog::STRATUM, "Closing stratum server connection to %s due to process termination\n", subscription.second.GetPeer().ToStringAddrPort());
@@ -994,6 +1114,7 @@ static RPCHelpMan getstratuminfo() {
     if (!enabled) {
         return ret;
     }
+    LOCK(cs_stratum);
     int64_t now = GetTime();
     ret.pushKV("curtime", now);
     ret.pushKV("uptime", now - g_start_time);
