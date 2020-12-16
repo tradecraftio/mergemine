@@ -1423,6 +1423,6 @@ std::vector<RPCResult> ScriptPubKeyDoc() {
 
 uint256 GetTarget(const CBlockIndex& blockindex, const uint256 pow_limit)
 {
-    arith_uint256 target{*CHECK_NONFATAL(DeriveTarget(blockindex.nBits, pow_limit))};
+    arith_uint256 target{*CHECK_NONFATAL(DeriveTarget(blockindex.nBits, 0, pow_limit))};
     return ArithToUint256(target);
 }

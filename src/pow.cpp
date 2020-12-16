@@ -137,19 +137,23 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
 
 // Bypasses the actual proof of work check during fuzz testing with a simplified validation checking whether
 // the most significant bit of the last byte of the hash is set.
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
+bool CheckProofOfWork(uint256 hash, unsigned int nBits, unsigned char bias, const Consensus::Params& params)
 {
     if constexpr (G_FUZZING) return (hash.data()[31] & 0x80) == 0;
-    return CheckProofOfWorkImpl(hash, nBits, params);
+    return CheckProofOfWorkImpl(hash, nBits, bias, params);
 }
 
-std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_limit)
+std::optional<arith_uint256> DeriveTarget(unsigned int nBits, unsigned char bias, const uint256 pow_limit)
 {
     bool fNegative;
     bool fOverflow;
     arith_uint256 bnTarget;
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+    if (bias) {
+        fOverflow = fOverflow || (bias > (256 - bnTarget.bits()));
+        bnTarget <<= bias;
+    }
 
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(pow_limit))
@@ -158,9 +162,9 @@ std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_
     return bnTarget;
 }
 
-bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params& params)
+bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, unsigned char bias, const Consensus::Params& params)
 {
-    auto bnTarget{DeriveTarget(nBits, params.powLimit)};
+    auto bnTarget{DeriveTarget(nBits, bias, params.powLimit)};
     if (!bnTarget) return false;
 
     // Check proof of work matches claimed amount
