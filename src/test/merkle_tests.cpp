@@ -10,19 +10,6 @@
 
 BOOST_FIXTURE_TEST_SUITE(merkle_tests, TestingSetup)
 
-static uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex) {
-    uint256 hash = leaf;
-    for (std::vector<uint256>::const_iterator it = vMerkleBranch.begin(); it != vMerkleBranch.end(); ++it) {
-        if (nIndex & 1) {
-            hash = Hash(*it, hash);
-        } else {
-            hash = Hash(hash, *it);
-        }
-        nIndex >>= 1;
-    }
-    return hash;
-}
-
 // Older version of the merkle root computation code, for comparison.
 static uint256 BlockBuildMerkleTree(const CBlock& block, bool* fMutated, std::vector<uint256>& vMerkleTree)
 {

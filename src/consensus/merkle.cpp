@@ -62,6 +62,18 @@ uint256 ComputeMerkleRoot(std::vector<uint256> hashes, bool* mutated) {
     return hashes[0];
 }
 
+uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex) {
+    uint256 hash = leaf;
+    for (std::vector<uint256>::const_iterator it = vMerkleBranch.begin(); it != vMerkleBranch.end(); ++it) {
+        if (nIndex & 1) {
+            hash = Hash(*it, hash);
+        } else {
+            hash = Hash(hash, *it);
+        }
+        nIndex >>= 1;
+    }
+    return hash;
+}
 
 uint256 BlockMerkleRoot(const CBlock& block, bool* mutated)
 {
