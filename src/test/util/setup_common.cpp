@@ -377,9 +377,10 @@ CBlock TestChain100Setup::CreateBlock(
 {
     BlockAssembler::Options options;
     options.coinbase_output_script = scriptPubKey;
-    CBlock block = BlockAssembler{chainstate, nullptr, options}.CreateNewBlock()->block;
+    auto pblocktemplate = BlockAssembler{chainstate, nullptr, options}.CreateNewBlock();
+    CBlock &block = pblocktemplate->block;
 
-    Assert(block.vtx.size() == 1);
+    Assert(block.vtx.size() == (1 + !!pblocktemplate->has_block_final_tx));
     for (const CMutableTransaction& tx : txns) {
         block.vtx.push_back(MakeTransactionRef(tx));
     }
