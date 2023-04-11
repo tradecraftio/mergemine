@@ -2,10 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <consensus/merkle.h> // for MerkleHash_Sha256Midstate
 #include <consensus/merkleproof.h>
 #include <hash.h>
-
-extern uint256 MerkleHash_Sha256Midstate(const uint256& left, const uint256& right);
 
 /*
  * The {SKIP, SKIP} entry is missing on purpose.  Not only does this make the
