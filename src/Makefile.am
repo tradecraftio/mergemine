@@ -275,6 +275,7 @@ BITCOIN_CORE_H = \
   script/sign.h \
   script/signingprovider.h \
   script/solver.h \
+  sharechain.h \
   signet.h \
   stratum.h \
   streams.h \
@@ -466,6 +467,7 @@ libbitcoin_node_a_SOURCES = \
   rpc/signmessage.cpp \
   rpc/txoutproof.cpp \
   script/sigcache.cpp \
+  sharechain.cpp \
   signet.cpp \
   stratum.cpp \
   timedata.cpp \
