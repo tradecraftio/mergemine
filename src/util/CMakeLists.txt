@@ -18,6 +18,7 @@ add_library(bitcoin_util STATIC EXCLUDE_FROM_ALL
   rbf.cpp
   readwritefile.cpp
   serfloat.cpp
+  sharechaintype.cpp
   signalinterrupt.cpp
   sock.cpp
   strencodings.cpp
