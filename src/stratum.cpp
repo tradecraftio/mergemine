@@ -1609,6 +1609,14 @@ bool InitStratumServer(node::NodeContext& node)
 
     // Setup the share chain parameters.
     SelectShareParams(gArgs.GetShareChainType());
+    const ShareChainParams& sharechainparams = ShareParams();
+    if (sharechainparams.IsValid()) {
+        const ShareChainstateManager::Options sharechainman_opts{
+            .chainparams = Params(),
+            .sharechainparams = sharechainparams,
+        };
+        node.sharechainman = std::make_unique<ShareChainstateManager>(sharechainman_opts);
+    }
 
     // Either -defaultminingaddress or -stratumwallet can be set, but not both.
     if (gArgs.IsArgSet("-defaultminingaddress") && gArgs.IsArgSet("-stratumwallet")) {
