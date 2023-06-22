@@ -357,6 +357,7 @@ BITCOIN_CORE_H = \
   wallet/miner.h \
   wallet/receive.h \
   wallet/rpc/util.h \
+  wallet/rpc/miner.h \
   wallet/rpc/wallet.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
@@ -482,6 +483,7 @@ libbitcoin_node_a_SOURCES = \
   validationinterface.cpp \
   versionbits.cpp \
   wallet/miner.cpp \
+  wallet/rpc/miner.cpp \
   $(BITCOIN_CORE_H)
 
 if ENABLE_WALLET
