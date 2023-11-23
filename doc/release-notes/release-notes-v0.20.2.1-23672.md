@@ -19,7 +19,7 @@ stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
 Please report bugs related to the stratum mining server implementation or
 Tradecraft/Freicoin merge-mining at the Tradecraft issue tracker on GitHub:
 
-  <https://github.com/tradecraftio/tradecraft/issues>
+  <https://github.com/tradecraftio/mergemine/issues>
 
 Please report other bugs using Bitcoin the issue tracker at GitHub:
 
@@ -54,7 +54,7 @@ Linux kernel, macOS 10.12+, and Windows 7 and newer.  Bitcoin Core should also
 work on most other Unix-like systems but is not as frequently tested on them.
 It is not recommended to use Bitcoin Core on unsupported systems.
 
-From Bitcoin Core 0.20.0 onwards, macOS versions earlier than 10.12 are no
+From Bitcoin Core v0.20 onwards, macOS versions earlier than 10.12 are no
 longer supported. Additionally, Bitcoin Core does not yet change appearance when
 macOS "dark mode" is activated.
 
