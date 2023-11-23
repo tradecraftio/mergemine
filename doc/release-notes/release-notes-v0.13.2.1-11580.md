@@ -1,4 +1,4 @@
-Bitcoin version v0.13.2.1-11580 is now available from:
+Bitcoin version 0.13.2.1-11580 is now available from:
 
   * [Linux i686 (Intel 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.13.2.1-11580-i686-pc-linux-gnu.tar.gz)
   * [Linux x86_64 (Intel 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.13.2.1-11580-x86_64-linux-gnu.tar.gz)
@@ -16,11 +16,11 @@ This is the first release of the v0.13 stable branch of Bitcoin Core with the
 stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
 
 Please report bugs related to the stratum mining server implementation or
-Tradecraft/Freicoin merge-mining at the Tradecraft issue tracker on Github:
+Tradecraft/Freicoin merge-mining at the Tradecraft issue tracker on GitHub:
 
-  <https://github.com/tradecraftio/tradecraft/issues>
+  <https://github.com/tradecraftio/mergemine/issues>
 
-Please report other bugs using Bitcoin the issue tracker at github:
+Please report other bugs using Bitcoin the issue tracker at GitHub:
 
   <https://github.com/bitcoin/bitcoin/issues>
 
