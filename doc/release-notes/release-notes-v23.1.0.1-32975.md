@@ -3,19 +3,7 @@ v23.1.0.1-32975 Release Notes
 
 Bitcoin Core version v23.1.0.1-32975 is now available from:
 
-  * [Linux x86_64 (Intel 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-x86_64-linux-gnu.tar.gz)
-  * [Linux ARMv7-A (ARM 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-arm-linux-gnueabihf.tar.gz)
-  * [Linux ARMv8-A (ARM 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-aarch64-linux-gnu.tar.gz)
-  * [Linux PowerPC (64-bit, big endian)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-powerpc64-linux-gnu.tar.gz)
-  * [Linux PowerPC (64-bit, little endian)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-powerpc64le-linux-gnu.tar.gz)
-  * [Linux RISC-V 64-bit (RV64GC)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-riscv64-linux-gnu.tar.gz)
-  * [macOS (Apple Silicon, app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-arm64-apple-darwin.dmg)
-  * [macOS (Apple Silicon, server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-arm64-apple-darwin.tar.gz)
-  * [macOS (Intel, app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-x86_64-apple-darwin.dmg)
-  * [macOS (Intel, server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-x86_64-apple-darwin.tar.gz)
-  * [Windows 64-bit (installer)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-win64-setup.exe)
-  * [Windows 64-bit (zip)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v23.1.0.1-32975-win64.zip)
-  * [Source](https://github.com/tradecraftio/tradecraft/archive/bitcoin-v23.1.0.1-32975.zip)
+  <https://github.com/tradecraftio/mergemine/releases/tag/v23.1.0.1-32975>
 
 This is a new minor release of the v23 stable branch of Bitcoin Core with the
 stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
