@@ -3,16 +3,7 @@ v0.19.2.1-21681 Release Notes
 
 Bitcoin Core version v0.19.2.1-21681 is now available from:
 
-  * [Linux i686 (Intel 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-i686-pc-linux-gnu.tar.gz)
-  * [Linux x86_64 (Intel 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-x86_64-linux-gnu.tar.gz)
-  * [Linux ARMv7-A (ARM 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-arm-linux-gnueabihf.tar.gz)
-  * [Linux ARMv8-A (ARM 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-aarch64-linux-gnu.tar.gz)
-  * [Linux RISC-V 64-bit (RV64GC)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-riscv64-linux-gnu.tar.gz)
-  * [macOS (app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-osx.dmg)
-  * [macOS (server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-osx64.tar.gz)
-  * [Windows 64-bit (installer)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-win64-setup.exe)
-  * [Windows 64-bit (zip)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.19.2.1-21681-win64.zip)
-  * [Source](https://github.com/tradecraftio/tradecraft/archive/bitcoin-v0.19.2.1-21681.zip)
+  <https://github.com/tradecraftio/mergemine/releases/tag/v0.19.2.1-21681>
 
 This is the first release of the v0.19 stable branch of Bitcoin Core with the
 stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
@@ -20,7 +11,7 @@ stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
 Please report bugs related to the stratum mining server implementation or
 Tradecraft/Freicoin merge-mining at the Tradecraft issue tracker on GitHub:
 
-  <https://github.com/tradecraftio/tradecraft/issues>
+  <https://github.com/tradecraftio/mergemine/issues>
 
 Please report other bugs using Bitcoin the issue tracker at GitHub:
 
@@ -57,7 +48,7 @@ use Bitcoin Core on unsupported systems.
 Bitcoin Core should also work on most other Unix-like systems but is not as
 frequently tested on them.
 
-From Bitcoin Core 0.17.0 onwards, macOS versions earlier than 10.10 are no
+From Bitcoin Core v0.17 onwards, macOS versions earlier than 10.10 are no
 longer supported, as Bitcoin Core is now built using Qt 5.9.x which requires
 macOS 10.10+. Additionally, Bitcoin Core does not yet change appearance when
 macOS "dark mode" is activated.
