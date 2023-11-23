@@ -20,7 +20,7 @@ includes Speedy Trial activation parameters for the Taproot soft-fork extension.
 Please report bugs related to the stratum mining server implementation or
 Tradecraft/Freicoin merge-mining at the Tradecraft issue tracker on GitHub:
 
-  <https://github.com/tradecraftio/tradecraft/issues>
+  <https://github.com/tradecraftio/mergemine/issues>
 
 Please report other bugs using Bitcoin the issue tracker at GitHub:
 
@@ -55,7 +55,7 @@ Linux kernel, macOS 10.12+, and Windows 7 and newer.  Bitcoin Core should also
 work on most other Unix-like systems but is not as frequently tested on them.
 It is not recommended to use Bitcoin Core on unsupported systems.
 
-From Bitcoin Core 0.20.0 onwards, macOS versions earlier than 10.12 are no
+From Bitcoin Core v0.20 onwards, macOS versions earlier than 10.12 are no
 longer supported.  Additionally, Bitcoin Core does not yet change appearance
 when macOS "dark mode" is activated.
 
@@ -63,7 +63,7 @@ Notable changes
 ===============
 
 There have been no notable changes in the stratum mining server or the
-Tradecraft/Freicoin merge-mining patches between v0.21.1.1-26529 and this
+Tradecraft/Freicoin merge-mining patches between v0.21.0.1-26529 and this
 release.  Please see the Bitcoin Core release notes for notable changes between
 the upstream versions upon which these releases are based.
 
