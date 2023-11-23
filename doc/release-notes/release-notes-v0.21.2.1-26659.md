@@ -3,15 +3,7 @@ v0.21.2.1-26659 Release Notes
 
 Bitcoin Core version v0.21.2.1-26659 is now available from:
 
-  * [Linux x86_64 (Intel 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-x86_64-linux-gnu.tar.gz)
-  * [Linux ARMv7-A (ARM 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-arm-linux-gnueabihf.tar.gz)
-  * [Linux ARMv8-A (ARM 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-aarch64-linux-gnu.tar.gz)
-  * [Linux RISC-V 64-bit (RV64GC)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-riscv64-linux-gnu.tar.gz)
-  * [macOS (app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-osx.dmg)
-  * [macOS (server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-osx64.tar.gz)
-  * [Windows 64-bit (installer)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-win64-setup.exe)
-  * [Windows 64-bit (zip)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v0.21.2.1-26659-win64.zip)
-  * [Source](https://github.com/tradecraftio/tradecraft/archive/bitcoin-v0.21.2.1-26659.zip)
+  <https://github.com/tradecraftio/mergemine/releases/tag/v0.21.2.1-26659>
 
 This is a new minor release of the v0.21 stable branch of Bitcoin Core with the
 stratum mining server and Tradecraft/Freicoin merge-mining patches applied.  It
