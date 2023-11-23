@@ -3,19 +3,7 @@ v25.1.0.1-37413 Release Notes
 
 Bitcoin Core version v25.1.0.1-37413 is now available from:
 
-  * [Linux x86_64 (Intel 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-x86_64-linux-gnu.tar.gz)
-  * [Linux ARMv7-A (ARM 32-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-arm-linux-gnueabihf.tar.gz)
-  * [Linux ARMv8-A (ARM 64-bit)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-aarch64-linux-gnu.tar.gz)
-  * [Linux PowerPC (64-bit, big endian)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-powerpc64-linux-gnu.tar.gz)
-  * [Linux PowerPC (64-bit, little endian)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-powerpc64le-linux-gnu.tar.gz)
-  * [Linux RISC-V 64-bit (RV64GC)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-riscv64-linux-gnu.tar.gz)
-  * [macOS (Apple Silicon, app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-arm64-apple-darwin.dmg)
-  * [macOS (Apple Silicon, server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-arm64-apple-darwin.tar.gz)
-  * [macOS (Intel, app)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-x86_64-apple-darwin.dmg)
-  * [macOS (Intel, server)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-x86_64-apple-darwin.tar.gz)
-  * [Windows 64-bit (installer)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-win64-setup.exe)
-  * [Windows 64-bit (zip)](https://s3.amazonaws.com/in.freico.stable/bitcoin-v25.1.0.1-37413-win64.zip)
-  * [Source](https://github.com/tradecraftio/tradecraft/archive/bitcoin-v25.1.0.1-37413.zip)
+  <https://github.com/tradecraftio/mergemine/releases/tag/v25.1.0.1-37413>
 
 This is a point release of the v25 stable branch of Bitcoin Core with the
 stratum mining server and Tradecraft/Freicoin merge-mining patches applied.
