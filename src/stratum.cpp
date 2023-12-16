@@ -116,6 +116,9 @@ struct StratumClient {
     CBlockIndex* m_last_tip;
     //! The last second stage work unit the client was notified of.
     std::optional<std::pair<ChainId, uint256> > m_last_second_stage;
+    //! Set to true during the handling of a message (e.g. "mining.subscribe")
+    //! if a "Mining.set_difficulty" message needs to be sent to the client.
+    bool m_send_difficulty;
     //! Set to true during the handling of a message (e.g. "mining.submit") if
     //! new work needs to be generated for the client.
     bool m_send_work;
@@ -123,8 +126,8 @@ struct StratumClient {
     //! Whether the client supports the "mining.set_extranonce" message.
     bool m_supports_extranonce;
 
-    StratumClient() : m_socket(0), m_bev(0), m_connect_time(GetTime()), m_last_recv_time(0), m_last_work_time(0), m_last_submit_time(0), m_nextid(0), m_subscribed(false), m_authorized(false), m_mindiff(0.0), m_version_rolling_mask(0x00000000), m_last_tip(0), m_send_work(false), m_supports_extranonce(false) { GenSecret(); }
-    StratumClient(evutil_socket_t socket, bufferevent* bev, CService from) : m_socket(socket), m_bev(bev), m_from(from), m_connect_time(GetTime()), m_last_recv_time(0), m_last_work_time(0), m_last_submit_time(0), m_nextid(0), m_subscribed(false), m_authorized(false), m_mindiff(0.0), m_version_rolling_mask(0x00000000), m_last_tip(0), m_send_work(false), m_supports_extranonce(false) { GenSecret(); }
+    StratumClient() : m_socket(0), m_bev(0), m_connect_time(GetTime()), m_last_recv_time(0), m_last_work_time(0), m_last_submit_time(0), m_nextid(0), m_subscribed(false), m_authorized(false), m_mindiff(0.0), m_version_rolling_mask(0x00000000), m_last_tip(0), m_send_difficulty(false), m_send_work(false), m_supports_extranonce(false) { GenSecret(); }
+    StratumClient(evutil_socket_t socket, bufferevent* bev, CService from) : m_socket(socket), m_bev(bev), m_from(from), m_connect_time(GetTime()), m_last_recv_time(0), m_last_work_time(0), m_last_submit_time(0), m_nextid(0), m_subscribed(false), m_authorized(false), m_mindiff(0.0), m_version_rolling_mask(0x00000000), m_last_tip(0), m_send_difficulty(false), m_send_work(false), m_supports_extranonce(false) { GenSecret(); }
 
     //! Generate a new random secret for this client.
     void GenSecret();
@@ -958,6 +961,10 @@ UniValue stratum_mining_subscribe(StratumClient& client, const UniValue& params)
     ret.push_back(HexStr(client.ExtraNonce1(JobId{})));
     ret.push_back(UniValue(4)); // sizeof(extranonce2)
 
+    // Some mining clients, like Apollo BTC miner, require a separate
+    // set_difficulty message to be sent.
+    client.m_send_difficulty = true;
+
     return ret;
 }
 
@@ -1276,6 +1283,28 @@ static void stratum_read_cb(bufferevent *bev, void *ctx)
         if (evbuffer_add(output, reply.data(), reply.size())) {
             LogPrint(BCLog::STRATUM, "Sending stratum response failed. (Reason: %d, '%s')\n", errno, evutil_socket_error_to_string(errno));
         }
+    }
+
+    // If required, send updated difficulty to the client.
+    if (client.m_send_difficulty) {
+        double diff = ClampDifficulty(client, 8192.0);
+
+        UniValue set_difficulty(UniValue::VOBJ);
+        set_difficulty.pushKV("id", client.m_nextid++);
+        set_difficulty.pushKV("method", "mining.set_difficulty");
+        UniValue set_difficulty_params(UniValue::VARR);
+        set_difficulty_params.push_back(UniValue(diff));
+        set_difficulty.pushKV("params", set_difficulty_params);
+
+        std::string data = set_difficulty.write() + "\n";
+
+        LogPrint(BCLog::STRATUM, "Sending updated difficulty to %s : %s", client.GetPeer().ToStringAddrPort(), data);
+        if (evbuffer_add(output, data.data(), data.size())) {
+            LogPrint(BCLog::STRATUM, "Sending updated difficulty failed. (Reason: %d, '%s')\n", errno, evutil_socket_error_to_string(errno));
+        }
+
+        // Clear the flag now that the client has an updated difficulty.
+        client.m_send_difficulty = false;
     }
 
     // If required, send new work to the client.
