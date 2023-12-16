@@ -142,7 +142,7 @@ struct StratumClient {
     //! The client's merge-mining authorization info for various chains.
     std::map<ChainId, std::pair<std::string, std::string> > m_mmauth;
     //! The current merge-mining work on the chains for which the client is authorized.
-    std::map<uint256, std::pair<uint64_t, std::map<ChainId, AuxWork> > > m_mmwork;
+    std::map<JobId, std::pair<uint64_t, std::map<ChainId, AuxWork> > > m_mmwork;
     //! The minimum difficulty the client is willing to work on.
     double m_mindiff;
 
@@ -637,8 +637,8 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
         }
 
         // Do the same for merge-mining work
-        std::vector<uint256> old_mmwork_keys;
-        std::optional<uint256> oldest_mmwork_key = std::nullopt;
+        std::vector<JobId> old_mmwork_keys;
+        std::optional<JobId> oldest_mmwork_key = std::nullopt;
         uint64_t oldest_mmwork_timestamp = static_cast<uint64_t>(last_update_time) * 1000;
         const uint64_t cutoff_timestamp = oldest_mmwork_timestamp - (900 * 1000);
         for (const auto& mmwork : client.m_mmwork) {
@@ -676,14 +676,16 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
     uint32_t max_bits = current_work.GetBlock().nBits;
     bool has_merge_mining = false;
     uint256 mmroot;
+    JobId mmjobid;
     if (current_work.m_block_template.has_block_final_tx) {
         std::map<ChainId, AuxWork> mmwork = GetMergeMineWork(client.m_mmauth);
         if (mmwork.empty()) {
             LogPrint(BCLog::MERGEMINE, "No auxiliary work commitments to add to block template for stratum miner %s from %s.\n", EncodeDestination(client.m_addr), client.GetPeer().ToStringAddrPort());
         } else {
             mmroot = AuxWorkMerkleRoot(mmwork);
-            if (!client.m_mmwork.count(mmroot)) {
-                client.m_mmwork[mmroot] = std::make_pair(TicksSinceEpoch<std::chrono::milliseconds>(SystemClock::now()), mmwork);
+            mmjobid = JobId(mmroot);
+            if (!client.m_mmwork.count(JobId(mmjobid))) {
+                client.m_mmwork[mmjobid] = std::make_pair(TicksSinceEpoch<std::chrono::milliseconds>(SystemClock::now()), mmwork);
             }
             UpdateBlockFinalTxCommitment(bf, mmroot);
             bilingual_str error;
@@ -730,7 +732,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
     std::string cb2 = HexStr({&ds[pos], ds.size()-pos});
 
     UniValue params(UniValue::VARR);
-    params.push_back(HexStr(job_id) + (has_merge_mining? ":" + HexStr(mmroot): ""));
+    params.push_back(HexStr(job_id) + (has_merge_mining? ":" + HexStr(mmjobid): ""));
     // For reasons of who-the-heck-knows-why, stratum byte-swaps each
     // 32-bit chunk of the hashPrevBlock.
     uint256 hashPrevBlock(current_work.GetBlock().hashPrevBlock);
@@ -832,8 +834,9 @@ bool SubmitBlock(StratumClient& client, const JobId& job_id, const uint256& mmro
 
     // Now we check if the work meets any of the auxiliary header requirements,
     // and if so submit them.
-    //client.m_mmwork[mmroot] = std::make_pair(TicksSinceEpoch<std::chrono::milliseconds>(SystemClock::now()), mmwork);
-    if (current_work.m_is_witness_enabled && current_work.m_block_template.has_block_final_tx && client.m_mmwork.count(mmroot)) {
+    //client.m_mmwork[mmjobid] = std::make_pair(TicksSinceEpoch<std::chrono::milliseconds>(SystemClock::now()), mmwork);
+    JobId mmjobid(mmroot);
+    if (current_work.m_is_witness_enabled && current_work.m_block_template.has_block_final_tx && client.m_mmwork.count(mmjobid)) {
         AuxProof auxproof;
         CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
         ds << bf;
@@ -861,7 +864,7 @@ bool SubmitBlock(StratumClient& client, const JobId& job_id, const uint256& mmro
         auxproof.nTime = blkhdr.nTime;
         auxproof.nBits = blkhdr.nBits;
         auxproof.nNonce = blkhdr.nNonce;
-        for (const auto& item : client.m_mmwork[mmroot].second) {
+        for (const auto& item : client.m_mmwork[mmjobid].second) {
             const ChainId& chainid = item.first;
             const AuxWork& auxwork = item.second;
             std::optional<std::string> username;
@@ -1523,7 +1526,7 @@ void BlockWatcher()
                 }
                 std::map<ChainId, AuxWork> mmwork = GetMergeMineWork(client.m_mmauth);
                 uint256 mmroot = AuxWorkMerkleRoot(mmwork);
-                if ((client.m_last_tip == tip) && client.m_mmwork.count(mmroot)) {
+                if ((client.m_last_tip == tip) && client.m_mmwork.count(JobId(mmroot))) {
                     continue;
                 }
             }
