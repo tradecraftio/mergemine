@@ -1207,7 +1207,15 @@ UniValue stratum_mining_submit(StratumClient& client, const UniValue& params) EX
         uint256 mmroot;
         size_t pos = std::string::npos;
         if ((pos = id.find(':', 0)) != std::string::npos) {
-            mmroot = ParseUInt256(std::string(id, pos+1), "mmroot");
+            JobId mmjobid = JobId(std::string(id, pos+1));
+            if (!client.m_mmwork.count(mmjobid)) {
+                LogPrint(BCLog::STRATUM, "Received completed share for unknown merge-mining work : %s\n", id);
+                // The client is sending us work we never heard of.  Somethig is
+                // seriously wrong.  Let's get the client back on track.
+                client.m_send_work = true;
+                return false;
+            }
+            mmroot = AuxWorkMerkleRoot(client.m_mmwork[mmjobid].second);
             id.resize(pos);
         }
         JobId job_id(id);
