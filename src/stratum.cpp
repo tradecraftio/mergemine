@@ -481,7 +481,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
         set_difficulty_params.push_back(UniValue(diff));
         set_difficulty.pushKV("params", set_difficulty_params);
 
-        std::string job_id = ":" + second_stage->second.job_id;
+        std::string job_id = "/" + second_stage->second.job_id;
 
         UniValue mining_notify(UniValue::VOBJ);
         mining_notify.pushKV("id", client.m_nextid++);
@@ -699,7 +699,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
     std::string cb2 = HexStr({&ds[pos], ds.size()-pos});
 
     UniValue params(UniValue::VARR);
-    params.push_back(HexStr(job_id) + (has_merge_mining? ":" + HexStr(mmroot): ""));
+    params.push_back(HexStr(job_id) + (has_merge_mining? "/" + HexStr(mmroot): ""));
     // For reasons of who-the-heck-knows-why, stratum byte-swaps each
     // 32-bit chunk of the hashPrevBlock.
     uint256 hashPrevBlock(current_work.GetBlock().hashPrevBlock);
@@ -1016,7 +1016,7 @@ UniValue stratum_mining_authorize(StratumClient& client, const UniValue& params)
             boost::trim_left(value);
             std::string username(value);
             std::string password;
-            if ((pos = value.find(':')) != std::string::npos) {
+            if ((pos = value.find('/')) != std::string::npos) {
                 username.resize(pos);
                 password = value.substr(pos+1);
             }
@@ -1147,7 +1147,7 @@ UniValue stratum_mining_submit(StratumClient& client, const UniValue& params) EX
     uint32_t nTime = ParseHexInt4(params[3], "nTime");
     uint32_t nNonce = ParseHexInt4(params[4], "nNonce");
 
-    if (id[0] == ':') {
+    if (id[0] == '/') {
         // Second stage work unit
         std::string job_id(id, 1);
         if (!second_stages.count(job_id)) {
@@ -1172,7 +1172,7 @@ UniValue stratum_mining_submit(StratumClient& client, const UniValue& params) EX
     } else {
         uint256 mmroot;
         size_t pos = std::string::npos;
-        if ((pos = id.find(':', 0)) != std::string::npos) {
+        if ((pos = id.find('/', 0)) != std::string::npos) {
             mmroot = ParseUInt256(std::string(id, pos+1), "mmroot");
             id.resize(pos);
         }
