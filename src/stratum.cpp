@@ -68,6 +68,37 @@ using std::swap;
 #include <sys/socket.h>
 #endif
 
+//! Wraps a hash value representing an ID for a stratum job
+struct JobId : public std::array<unsigned char, 8> {
+    JobId() {
+        std::fill(begin(), end(), 0);
+    }
+    explicit JobId(const uint256& hash) {
+        uint64_t siphash = htole64(
+            SipHashUint256(0x779210d350dae066UL, 0x828d056f89a7486aUL, hash)
+        );
+        unsigned char* siphash_bytes = reinterpret_cast<unsigned char*>(&siphash);
+        std::copy(siphash_bytes, siphash_bytes + size(), begin());
+    }
+    explicit JobId(const BaseHash<uint256>& hash) {
+        uint64_t siphash = htole64(
+            CSipHasher(0x11d6a16033e584bdUL, 0x5784b7e61ca05cf2UL).Write(hash).Finalize()
+        );
+        unsigned char* siphash_bytes = reinterpret_cast<unsigned char*>(&siphash);
+        std::copy(siphash_bytes, siphash_bytes + size(), begin());
+    }
+    explicit JobId(const std::string& hex) {
+        std::vector<unsigned char> vch = ParseHex(hex);
+        if (vch.size() != size()) {
+            throw std::runtime_error("JobId must be exactly 8 bytes / 16 hex");
+        }
+        std::copy(vch.begin(), vch.end(), begin());
+    }
+    std::string ToString() const {
+        return HexStr(*this);
+    }
+};
+
 struct StratumClient {
     //! The return socket used to communicate with the client.
     evutil_socket_t m_socket;
@@ -130,14 +161,14 @@ struct StratumClient {
     void GenSecret();
 
     //! Get the extra nonce to use for the given job ID.
-    std::vector<unsigned char> ExtraNonce1(const BaseHash<uint256>& job_id) const;
+    std::vector<unsigned char> ExtraNonce1(const JobId& job_id) const;
 };
 
 void StratumClient::GenSecret() {
     GetRandBytes(m_secret);
 }
 
-std::vector<unsigned char> StratumClient::ExtraNonce1(const BaseHash<uint256>& job_id) const
+std::vector<unsigned char> StratumClient::ExtraNonce1(const JobId& job_id) const
 {
     CSHA256 nonce_hasher;
     nonce_hasher.Write(m_secret.begin(), 32);
@@ -239,12 +270,6 @@ static std::map<bufferevent*, StratumClient> subscriptions;
 
 //! Mapping of stratum method names -> handlers
 static std::map<std::string, std::function<UniValue(StratumClient&, const UniValue&)> > stratum_method_dispatch;
-
-//! Wraps a hash value representing an ID for a stratum job
-struct JobId : BaseHash<uint256> {
-    JobId() : BaseHash() {}
-    explicit JobId(const uint256& hash) : BaseHash(hash) {}
-};
 
 //! A mapping of job_id -> work templates
 static std::map<JobId, StratumWork> work_templates;
@@ -361,7 +386,7 @@ static double ClampDifficulty(const StratumClient& client, double diff)
     return diff;
 }
 
-static std::string GetExtraNonceRequest(StratumClient& client, const BaseHash<uint256>& job_id) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
+static std::string GetExtraNonceRequest(StratumClient& client, const JobId& job_id) EXCLUSIVE_LOCKS_REQUIRED(cs_stratum)
 {
     std::string ret;
     if (client.m_supports_extranonce) {
@@ -528,7 +553,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
                            second_stage->second.hashPrevBlock);
 
         client.m_last_work_time = GetTime();
-        return GetExtraNonceRequest(client, second_stage->first) // note: not job_id
+        return GetExtraNonceRequest(client, JobId(second_stage->first)) // note: not job_id
              + set_difficulty.write() + "\n"
              + mining_notify.write() + "\n";
     } else {
@@ -879,7 +904,7 @@ bool SubmitSecondStage(StratumClient& client, const ChainId& chainid, const Seco
         username = client.m_mmauth[chainid].first;
     }
 
-    std::vector<unsigned char> extranonce1 = client.ExtraNonce1(chainid); // Note: not job_id
+    std::vector<unsigned char> extranonce1 = client.ExtraNonce1(JobId(chainid)); // Note: not job_id
 
     SubmitSecondStageShare(chainid, username, work, SecondStageProof(extranonce1, extranonce2, nVersion, nTime, nNonce));
 
@@ -1181,7 +1206,7 @@ UniValue stratum_mining_submit(StratumClient& client, const UniValue& params) EX
             mmroot = ParseUInt256(std::string(id, pos+1), "mmroot");
             id.resize(pos);
         }
-        JobId job_id(ParseUInt256(id, "job_id"));
+        JobId job_id(id);
 
         if (!work_templates.count(job_id)) {
             LogPrint(BCLog::STRATUM, "Received completed share for unknown job_id : %s\n", HexStr(job_id));
