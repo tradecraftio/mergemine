@@ -73,25 +73,20 @@ struct JobId : public std::array<unsigned char, 7> {
     JobId() {
         std::fill(begin(), end(), 0);
     }
+    void SetUint64(uint64_t val) {
+        at(0) = val & 0xff;
+        at(1) = (val >> 8) & 0xff;
+        at(2) = (val >> 16) & 0xff;
+        at(3) = (val >> 24) & 0xff;
+        at(4) = (val >> 32) & 0xff;
+        at(5) = (val >> 40) & 0xff;
+        at(6) = (val >> 48) & 0xff;
+    }
     explicit JobId(const uint256& hash) {
-        uint64_t siphash = SipHashUint256(0x779210d350dae066UL, 0x828d056f89a7486aUL, hash);
-        at(0) = siphash & 0xff;
-        at(1) = (siphash >> 8) & 0xff;
-        at(2) = (siphash >> 16) & 0xff;
-        at(3) = (siphash >> 24) & 0xff;
-        at(4) = (siphash >> 32) & 0xff;
-        at(5) = (siphash >> 40) & 0xff;
-        at(6) = (siphash >> 48) & 0xff;
+        SetUint64(SipHashUint256(0x779210d350dae066UL, 0x828d056f89a7486aUL, hash));
     }
     explicit JobId(const BaseHash<uint256>& hash) {
-        uint64_t siphash = CSipHasher(0x11d6a16033e584bdUL, 0x5784b7e61ca05cf2UL).Write(hash).Finalize();
-        at(0) = siphash & 0xff;
-        at(1) = (siphash >> 8) & 0xff;
-        at(2) = (siphash >> 16) & 0xff;
-        at(3) = (siphash >> 24) & 0xff;
-        at(4) = (siphash >> 32) & 0xff;
-        at(5) = (siphash >> 40) & 0xff;
-        at(6) = (siphash >> 48) & 0xff;
+        SetUint64(CSipHasher(0x11d6a16033e584bdUL, 0x5784b7e61ca05cf2UL).Write(hash).Finalize());
     }
     explicit JobId(const std::string& hex) {
         std::vector<unsigned char> vch = ParseHex(hex);
@@ -104,6 +99,12 @@ struct JobId : public std::array<unsigned char, 7> {
         return HexStr(*this);
     }
 };
+
+std::string SecondStageJobId(const std::string& str) {
+    JobId job_id;
+    job_id.SetUint64(CSipHasher(0x81af5761209e9820UL, 0x293addaf82c5a04aUL).Write(MakeUCharSpan(str)).Finalize());
+    return HexStr(job_id);
+}
 
 struct StratumClient {
     //! The return socket used to communicate with the client.
@@ -512,7 +513,8 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
         set_difficulty_params.push_back(UniValue(diff));
         set_difficulty.pushKV("params", set_difficulty_params);
 
-        std::string job_id = ":" + second_stage->second.job_id;
+        std::string key = SecondStageJobId(second_stage->second.job_id);
+        std::string job_id = ":" + key;
 
         UniValue mining_notify(UniValue::VOBJ);
         mining_notify.pushKV("id", client.m_nextid++);
@@ -544,7 +546,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
         }
         mining_notify.pushKV("params", mining_notify_params);
 
-        second_stages[second_stage->second.job_id] = *second_stage;
+        second_stages[key] = *second_stage;
 
         client.m_last_second_stage =
             std::make_pair(second_stage->first,
