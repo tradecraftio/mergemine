@@ -22,6 +22,9 @@ uint256 ParseUInt256(const UniValue& hex, const std::string& name);
 /** Check that the number of parameters are within [min, max]. */
 void BoundParams(const std::string& method, const UniValue& params, size_t min, size_t max);
 
+/** The minimum difficulty for stratum mining clients.  A difficulty setting of 10^3 would take a 1Thps miner ~4 seconds to find a share. */
+const double DEFAULT_MINING_DIFFICULTY = 1e3;
+
 /** Configure the stratum server. */
 bool InitStratumServer(node::NodeContext& node);
 
