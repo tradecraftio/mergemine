@@ -820,7 +820,7 @@ bool SubmitBlock(StratumClient& client, const JobId& job_id, const uint256& mmro
         if (res) {
             CBlockIndex* block_index = nullptr;
             {
-                LOCK(cs_main);
+                LOCK(g_context->chainman->GetMutex());
                 if (g_context->chainman->BlockIndex().count(hash)) {
                     block_index = &g_context->chainman->BlockIndex().at(hash);
                 }
