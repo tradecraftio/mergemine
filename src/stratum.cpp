@@ -306,8 +306,10 @@ uint32_t ParseHexInt4(const UniValue& hex, const std::string& name)
         throw JSONRPCError(RPC_INVALID_PARAMETER, name+" must be string valued");
     }
     std::string hexstr = hex.get_str();
-    if (!IsHex(hexstr)) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, name+" must be a hexidecimal string");
+    for (char& c : hexstr) {
+        if (HexDigit(c) < 0) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, name+" must be a hexidecimal string");
+        }
     }
     // Some bitcoin miners incorrectly report version strings using "%x"
     // instead of "%08x", so we need to handle that case by inserting leading
