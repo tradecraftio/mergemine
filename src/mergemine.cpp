@@ -321,7 +321,7 @@ std::map<ChainId, AuxWork> GetMergeMineWork(const std::map<ChainId, std::pair<st
             LogPrint(BCLog::MERGEMINE, "No work available for user \"%s\" (\"%s\") on chain 0x%s\n", username, address, HexStr(chainid));
             continue;
         }
-        LogPrint(BCLog::MERGEMINE, "Found work for user \"%s\" (\"%s\") on chain 0x%s", username, address, HexStr(chainid));
+        LogPrint(BCLog::MERGEMINE, "Found work for user \"%s\" (\"%s\") on chain 0x%s\n", username, address, HexStr(chainid));
         ret[chainid] = server->aux_work[address];
     }
 
