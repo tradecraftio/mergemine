@@ -704,6 +704,9 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
     JobId mmjobid;
     if (current_work.m_block_template.has_block_final_tx) {
         std::map<ChainId, AuxWork> mmwork = GetMergeMineWork(client.m_mmauth);
+        for (const auto& item : mmwork) {
+            max_bits = std::max(max_bits, item.second.bits);
+        }
         if (mmwork.empty()) {
             LogPrint(BCLog::MERGEMINE, "No auxiliary work commitments to add to block template for stratum miner %s from %s.\n", EncodeDestination(client.m_addr), client.GetPeer().ToStringAddrPort());
         } else {
@@ -728,7 +731,7 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
     }
 
     CBlockIndex tmp_index;
-    tmp_index.nBits = current_work.GetBlock().nBits;
+    tmp_index.nBits = max_bits;
     double diff = ClampDifficulty(client, GetDifficulty(&tmp_index));
 
     UniValue set_difficulty(UniValue::VOBJ);
