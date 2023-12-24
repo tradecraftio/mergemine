@@ -1065,7 +1065,10 @@ void MergeMiningManagerThread()
         for (std::map<CService, std::string>::const_iterator i = servers.begin(); i != servers.end(); ++i) {
             const CService& socket = i->first;
             const std::string& name = i->second;
-            ConnectToStratumEndpoint(socket, name);
+            {
+                LOCK(cs_mergemine);
+                ConnectToStratumEndpoint(socket, name);
+            }
             // Handle any events that have been triggered by our actions so far.
             event_base_loop(base, EVLOOP_NONBLOCK);
         }
