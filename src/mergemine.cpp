@@ -570,7 +570,7 @@ static UniValue stratum_mining_notify(AuxWorkServer& server, const UniValue& par
 
     std::vector<uint256> cb_branch;
     UniValue branch = params[4].get_array();
-    for (int i = 0; i < branch.size(); ++i) {
+    for (size_t i = 0; i < branch.size(); ++i) {
         cb_branch.push_back(ParseUInt256(branch[i].get_str(), strprintf("cb_branch[%d]", i)));
     }
 
