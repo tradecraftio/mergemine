@@ -255,7 +255,10 @@ uint256 MerkleTree::GetHash(bool* invalid) const {
                                 : m_verify[0];
     }
 
-    std::vector<std::pair<bool, uint256> > stack(2);
+    std::vector<std::pair<bool, uint256> > stack = {
+        {false, uint256()},
+        {false, uint256()},
+    };
     std::size_t verify_pos = 0;
     std::size_t skip_pos = 0;
 
@@ -263,7 +266,7 @@ uint256 MerkleTree::GetHash(bool* invalid) const {
         const uint256* new_hash = nullptr;
         switch (value) {
             case MerkleLink::DESCEND:
-                stack.emplace_back();
+                stack.emplace_back(false, uint256());
                 return false;
 
             case MerkleLink::VERIFY:
