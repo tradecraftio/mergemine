@@ -272,8 +272,8 @@ bool SignBlockFinalTransaction(const NodeContext& node, CMutableTransaction &ret
             LogPrintf("error signing block-final transaction with wallet \"%s\"", pwallet->GetName());
             for (const auto& error : input_errors) {
                 LogPrintf("error creating signature input %d to block-final transaction: %s", error.first, error.second.translated);
-                return false;
             }
+            return false;
         }
     }
 
