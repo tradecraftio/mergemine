@@ -1407,11 +1407,27 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
     BOOST_CHECK(MerkleTree(zero, skip) == skip);
     BOOST_CHECK(MerkleTree(skip, zero) == skip);
 
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_two_items)
+{
+    const MerkleTree zero;
+
+    uint256 hashA;
+    CHash256().Write({(const unsigned char*)"A", 1}).Finalize(hashA);
+    BOOST_CHECK(hashA == uint256S("425ea523fee4a4451246a49a08174424ee3fdc03d40926ad46ffe0e671efd61c"));
+
+    uint256 hashB;
+    CHash256().Write({(const unsigned char*)"B", 1}).Finalize(hashB);
+    BOOST_CHECK(hashB == uint256S("01517aea572935ff9eb1455bc1147f98fb60957f4f9f868f06824ede3bb0550b"));
+
     /* Two items: [A B].
      * We'll enumerate the possible combination of VERIFY and SKIP
      * hashes. */
     uint256 hashAB;
     hashAB = MerkleHash_Sha256Midstate(hashA, hashB);
+
+    bool invalid = true;
 
     {
         /* 0 */
@@ -1488,10 +1504,32 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
         BOOST_CHECK(MerkleTree(zero, res) == res);
         BOOST_CHECK(MerkleTree(res, zero) == res);
     }
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_three_items)
+{
+    const MerkleTree zero;
+
+    uint256 hashA;
+    CHash256().Write({(const unsigned char*)"A", 1}).Finalize(hashA);
+    BOOST_CHECK(hashA == uint256S("425ea523fee4a4451246a49a08174424ee3fdc03d40926ad46ffe0e671efd61c"));
+
+    uint256 hashB;
+    CHash256().Write({(const unsigned char*)"B", 1}).Finalize(hashB);
+    BOOST_CHECK(hashB == uint256S("01517aea572935ff9eb1455bc1147f98fb60957f4f9f868f06824ede3bb0550b"));
+
+    uint256 hashC;
+    CHash256().Write({(const unsigned char*)"C", 1}).Finalize(hashC);
+    BOOST_CHECK(hashC == uint256S("ea3f6455fc84430d6f2db40d708a046caab99ad8207d14e43b2f1ffd68894fca"));
 
     /* Three items: [[A B] C]. */
+    uint256 hashAB;
+    hashAB = MerkleHash_Sha256Midstate(hashA, hashB);
+
     uint256 hashAB_C;
     hashAB_C = MerkleHash_Sha256Midstate(hashAB, hashC);
+
+    bool invalid = true;
 
     {
         /* 0 */
@@ -1689,12 +1727,31 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
         BOOST_CHECK(MerkleTree(zero, res) == res);
         BOOST_CHECK(MerkleTree(res, zero) == res);
     }
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_three_items_reversed)
+{
+    const MerkleTree zero;
+
+    uint256 hashD;
+    CHash256().Write({(const unsigned char*)"D", 1}).Finalize(hashD);
+    BOOST_CHECK(hashD == uint256S("2e52efc7b8cab2e0ca3f688ae090febff94be0eaa3ce666301985b287fc6e178"));
+
+    uint256 hashE;
+    CHash256().Write({(const unsigned char*)"E", 1}).Finalize(hashE);
+    BOOST_CHECK(hashE == uint256S("a9c6b81b74f77d73def7397879bd23301159ce9554b2be00b09a2bab0c033c2d"));
+
+    uint256 hashF;
+    CHash256().Write({(const unsigned char*)"F", 1}).Finalize(hashF);
+    BOOST_CHECK(hashF == uint256S("1c4a32d1d781dd8633c2c21af8b24c6219278f5ea89adf2ee053c276b55a1f42"));
 
     /* Three items: [D [E F]]. */
     uint256 hashEF;
     hashEF = MerkleHash_Sha256Midstate(hashE, hashF);
     uint256 hashD_EF;
     hashD_EF = MerkleHash_Sha256Midstate(hashD, hashEF);
+
+    bool invalid = true;
 
     {
         /* 0 */
@@ -1891,12 +1948,37 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
         BOOST_CHECK(MerkleTree(zero, res) == res);
         BOOST_CHECK(MerkleTree(res, zero) == res);
     }
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_four_items)
+{
+    const MerkleTree zero;
+
+    uint256 hashA;
+    CHash256().Write({(const unsigned char*)"A", 1}).Finalize(hashA);
+    BOOST_CHECK(hashA == uint256S("425ea523fee4a4451246a49a08174424ee3fdc03d40926ad46ffe0e671efd61c"));
+
+    uint256 hashB;
+    CHash256().Write({(const unsigned char*)"B", 1}).Finalize(hashB);
+    BOOST_CHECK(hashB == uint256S("01517aea572935ff9eb1455bc1147f98fb60957f4f9f868f06824ede3bb0550b"));
+
+    uint256 hashC;
+    CHash256().Write({(const unsigned char*)"C", 1}).Finalize(hashC);
+    BOOST_CHECK(hashC == uint256S("ea3f6455fc84430d6f2db40d708a046caab99ad8207d14e43b2f1ffd68894fca"));
+
+    uint256 hashD;
+    CHash256().Write({(const unsigned char*)"D", 1}).Finalize(hashD);
+    BOOST_CHECK(hashD == uint256S("2e52efc7b8cab2e0ca3f688ae090febff94be0eaa3ce666301985b287fc6e178"));
 
     /* Four items: [[A B] [C D]]. */
+    uint256 hashAB;
+    hashAB = MerkleHash_Sha256Midstate(hashA, hashB);
     uint256 hashCD;
     hashCD = MerkleHash_Sha256Midstate(hashC, hashD);
     uint256 hashAB_CD;
     hashAB_CD = MerkleHash_Sha256Midstate(hashAB, hashCD);
+
+    bool invalid = true;
 
     {
         /* 0 */
@@ -2373,11 +2455,54 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
         BOOST_CHECK(MerkleTree(zero, res) == res);
         BOOST_CHECK(MerkleTree(res, zero) == res);
     }
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_six_items_part1)
+{
+    const MerkleTree zero;
+
+    uint256 hashA;
+    CHash256().Write({(const unsigned char*)"A", 1}).Finalize(hashA);
+    BOOST_CHECK(hashA == uint256S("425ea523fee4a4451246a49a08174424ee3fdc03d40926ad46ffe0e671efd61c"));
+
+    uint256 hashB;
+    CHash256().Write({(const unsigned char*)"B", 1}).Finalize(hashB);
+    BOOST_CHECK(hashB == uint256S("01517aea572935ff9eb1455bc1147f98fb60957f4f9f868f06824ede3bb0550b"));
+
+    uint256 hashC;
+    CHash256().Write({(const unsigned char*)"C", 1}).Finalize(hashC);
+    BOOST_CHECK(hashC == uint256S("ea3f6455fc84430d6f2db40d708a046caab99ad8207d14e43b2f1ffd68894fca"));
+
+    uint256 hashD;
+    CHash256().Write({(const unsigned char*)"D", 1}).Finalize(hashD);
+    BOOST_CHECK(hashD == uint256S("2e52efc7b8cab2e0ca3f688ae090febff94be0eaa3ce666301985b287fc6e178"));
+
+    uint256 hashE;
+    CHash256().Write({(const unsigned char*)"E", 1}).Finalize(hashE);
+    BOOST_CHECK(hashE == uint256S("a9c6b81b74f77d73def7397879bd23301159ce9554b2be00b09a2bab0c033c2d"));
+
+    uint256 hashF;
+    CHash256().Write({(const unsigned char*)"F", 1}).Finalize(hashF);
+    BOOST_CHECK(hashF == uint256S("1c4a32d1d781dd8633c2c21af8b24c6219278f5ea89adf2ee053c276b55a1f42"));
 
     /* Finally, a particular combination of six items:
      * [[[A B] C] [D [E F]]]. */
+    uint256 hashAB;
+    hashAB = MerkleHash_Sha256Midstate(hashA, hashB);
+
+    uint256 hashAB_C;
+    hashAB_C = MerkleHash_Sha256Midstate(hashAB, hashC);
+
+    uint256 hashEF;
+    hashEF = MerkleHash_Sha256Midstate(hashE, hashF);
+
+    uint256 hashD_EF;
+    hashD_EF = MerkleHash_Sha256Midstate(hashD, hashEF);
+
     uint256 hashAB_C__D_EF;
     hashAB_C__D_EF = MerkleHash_Sha256Midstate(hashAB_C, hashD_EF);
+
+    bool invalid = true;
 
     {
         /* 0 */
@@ -2958,6 +3083,54 @@ BOOST_AUTO_TEST_CASE(merkle_tree_constructor)
         BOOST_CHECK(MerkleTree(zero, res) == res);
         BOOST_CHECK(MerkleTree(res, zero) == res);
     }
+}
+
+BOOST_AUTO_TEST_CASE(merkle_tree_six_items_part2)
+{
+    const MerkleTree zero;
+
+    uint256 hashA;
+    CHash256().Write({(const unsigned char*)"A", 1}).Finalize(hashA);
+    BOOST_CHECK(hashA == uint256S("425ea523fee4a4451246a49a08174424ee3fdc03d40926ad46ffe0e671efd61c"));
+
+    uint256 hashB;
+    CHash256().Write({(const unsigned char*)"B", 1}).Finalize(hashB);
+    BOOST_CHECK(hashB == uint256S("01517aea572935ff9eb1455bc1147f98fb60957f4f9f868f06824ede3bb0550b"));
+
+    uint256 hashC;
+    CHash256().Write({(const unsigned char*)"C", 1}).Finalize(hashC);
+    BOOST_CHECK(hashC == uint256S("ea3f6455fc84430d6f2db40d708a046caab99ad8207d14e43b2f1ffd68894fca"));
+
+    uint256 hashD;
+    CHash256().Write({(const unsigned char*)"D", 1}).Finalize(hashD);
+    BOOST_CHECK(hashD == uint256S("2e52efc7b8cab2e0ca3f688ae090febff94be0eaa3ce666301985b287fc6e178"));
+
+    uint256 hashE;
+    CHash256().Write({(const unsigned char*)"E", 1}).Finalize(hashE);
+    BOOST_CHECK(hashE == uint256S("a9c6b81b74f77d73def7397879bd23301159ce9554b2be00b09a2bab0c033c2d"));
+
+    uint256 hashF;
+    CHash256().Write({(const unsigned char*)"F", 1}).Finalize(hashF);
+    BOOST_CHECK(hashF == uint256S("1c4a32d1d781dd8633c2c21af8b24c6219278f5ea89adf2ee053c276b55a1f42"));
+
+    /* Finally, a particular combination of six items:
+     * [[[A B] C] [D [E F]]]. */
+    uint256 hashAB;
+    hashAB = MerkleHash_Sha256Midstate(hashA, hashB);
+
+    uint256 hashAB_C;
+    hashAB_C = MerkleHash_Sha256Midstate(hashAB, hashC);
+
+    uint256 hashEF;
+    hashEF = MerkleHash_Sha256Midstate(hashE, hashF);
+
+    uint256 hashD_EF;
+    hashD_EF = MerkleHash_Sha256Midstate(hashD, hashEF);
+
+    uint256 hashAB_C__D_EF;
+    hashAB_C__D_EF = MerkleHash_Sha256Midstate(hashAB_C, hashD_EF);
+
+    bool invalid = true;
 
     {
         /* 32 */
