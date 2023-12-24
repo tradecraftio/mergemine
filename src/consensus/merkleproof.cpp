@@ -296,8 +296,6 @@ void swap(MerkleTree& lhs, MerkleTree& rhs) {
 }
 
 uint256 MerkleTree::GetHash(bool* invalid, std::vector<MerkleBranch>* branches) const {
-    using std::swap; // enable ADL
-
     /* As a special case, an empty proof with no verify hashes results
      * in the unsalted hash of empty string.  Although this requires
      * extra work in this implementation to support, it provides
@@ -437,7 +435,7 @@ uint256 MerkleTree::GetHash(bool* invalid, std::vector<MerkleBranch>* branches) 
     }
 
     if (branches) {
-        std::swap(*branches, proofs);
+        *branches = std::move(proofs);
     }
     return stack.back().second;
 }
