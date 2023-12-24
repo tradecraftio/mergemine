@@ -36,7 +36,7 @@ void SetupShareChainParamsOptions(ArgsManager& argsman);
 /**
  * @brief Sets the params returned by ShareParams() to those for the given chain name.
  *
- * @param chain For future expansion.  Must be set to `ShareChainParams::MAIN`.
+ * @param share_chain For future expansion.  Must be set to `ShareChainParams::MAIN`.
  * @throws std::runtime_error when the chain is not recognized.
  */
 void SelectShareParams(const ShareChainType share_chain);
