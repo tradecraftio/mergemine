@@ -953,7 +953,9 @@ static void LocalReconnectToMergeMineEndpoints() EXCLUSIVE_LOCKS_REQUIRED(cs_mer
         const AuxServerDisconnect& conn = endpoint.second;
         LogPrintf("Attempting reconnect to stratum+tcp://%s (%s)\n", socket.ToStringAddrPort(), conn.name);
         g_mergemine_noconn.erase(socket);
-        bufferevent* bev = ConnectToStratumEndpoint(socket, conn);
+        // Will add the server to g_mergemine_conn or g_mergemine_noconn for
+        // us, so we don't need to check the return value.
+        ConnectToStratumEndpoint(socket, conn);
     }
 }
 
