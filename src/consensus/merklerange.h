@@ -57,7 +57,10 @@
 #include <stddef.h> // for size_t
 #include <uint256.h> // for uint256
 
+#include <bitset> // for bitset
 #include <vector> // for vector
+
+#define POPCOUNT(x) (std::bitset<8*sizeof(size_t)>(x).count())
 
 struct MmrAccumulator {
     //! The number of leaf nodes in the tree.
@@ -68,7 +71,7 @@ struct MmrAccumulator {
 
     MmrAccumulator() : leaf_count(0) {}
     MmrAccumulator(size_t leaf_count, std::vector<uint256> peaks)
-        : leaf_count(leaf_count), peaks(peaks) { ASSERT_IF_DEBUG(peaks.size() == __builtin_popcount(leaf_count)); }
+        : leaf_count(leaf_count), peaks(peaks) { ASSERT_IF_DEBUG(peaks.size() == POPCOUNT(leaf_count)); }
 
     //! Returns true if the accumulator is empty.
     bool empty() const { return leaf_count == 0; }
@@ -92,7 +95,7 @@ struct MmrAccumulator {
         // interesting side effect that the number of peaks will always be
         // equal to the number of set bits in leaf_count.  Therefore encoding
         // the size of the peaks vector is unnecessary.
-        ASSERT_IF_DEBUG(peaks.size() == __builtin_popcount(leaf_count));
+        ASSERT_IF_DEBUG(peaks.size() == POPCOUNT(leaf_count));
         for (const auto& hash : peaks) {
             ::Serialize(s, hash);
         }
@@ -104,7 +107,7 @@ struct MmrAccumulator {
         // The number of peaks is equal to the number of set bits in
         // leaf_count, so the size of the peaks array is inferred rather than
         // encoded directly.
-        peaks.resize(__builtin_popcount(leaf_count));
+        peaks.resize(POPCOUNT(leaf_count));
         for (auto& hash : peaks) {
             ::Unserialize(s, hash);
         }
