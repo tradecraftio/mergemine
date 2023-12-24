@@ -221,7 +221,12 @@ bool AddBlockFinalTransaction(const NodeContext& node, Chainstate& chainstate, C
     // There are no fees in a wallet-generated block-final transaction.
     tmpl.vTxFees.push_back(0);
     // There might be a sigop cost though.
-    tmpl.vTxSigOpsCost.push_back(GetTransactionSigOpCost(*tmpl.block.vtx.back(), chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS));
+    CAmount tx_sigop_cost = 0;
+    {
+        LOCK(cs_main);
+        tx_sigop_cost = GetTransactionSigOpCost(*tmpl.block.vtx.back(), chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS);
+    }
+    tmpl.vTxSigOpsCost.push_back(tx_sigop_cost);
 
     int64_t weight = GetBlockWeight(tmpl.block);
     int64_t sigops = std::accumulate(tmpl.vTxSigOpsCost.begin(),
