@@ -23,7 +23,7 @@ class CConnman;
 class CScheduler;
 class CTxMemPool;
 class ChainstateManager;
-class ShareChainstateManager;
+struct ShareChainstateManager;
 class NetGroupManager;
 class PeerManager;
 namespace interfaces {
