@@ -352,6 +352,9 @@ void BlockAssembler::initFinalTx(const BlockFinalTxEntry& final_tx)
         return;
     }
 
+    LOCK(cs_main); // for m_chainstate.CoinsTip()
+    CCoinsViewCache &coins_view = m_chainstate.CoinsTip();
+
     // Create block-final tx
     CMutableTransaction txFinal;
     txFinal.nVersion = 2;
@@ -363,7 +366,7 @@ void BlockAssembler::initFinalTx(const BlockFinalTxEntry& final_tx)
     // prevent such transactions from being considered in the first place.
     for (uint32_t n = 0; n < final_tx.size; ++n) {
         COutPoint prevout(final_tx.hash, n);
-        const Coin& coin = m_chainstate.CoinsTip().AccessCoin(prevout);
+        const Coin& coin = coins_view.AccessCoin(prevout);
         if (IsTriviallySpendable(coin, prevout, MANDATORY_SCRIPT_VERIFY_FLAGS|SCRIPT_VERIFY_WITNESS|SCRIPT_VERIFY_CLEANSTACK)) {
             txFinal.vin.push_back(CTxIn(prevout, CScript(), CTxIn::SEQUENCE_FINAL));
         } else {
@@ -385,14 +388,14 @@ void BlockAssembler::initFinalTx(const BlockFinalTxEntry& final_tx)
     pblocktemplate->block.vtx.emplace_back(MakeTransactionRef(std::move(txFinal)));
 
     // Record the fees forwarded by the block-final transaction to the coinbase.
-    CAmount nTxFees = m_chainstate.CoinsTip().GetValueIn(*pblocktemplate->block.vtx.back())
+    CAmount nTxFees = coins_view.GetValueIn(*pblocktemplate->block.vtx.back())
                     - pblocktemplate->block.vtx.back()->GetValueOut();
     pblocktemplate->vTxFees.push_back(nTxFees);
     nFees += nTxFees;
 
     // The block-final transaction contributes to aggregate limits:
     // the number of sigops is tracked...
-    int64_t nTxSigOpsCost = GetTransactionSigOpCost(*pblocktemplate->block.vtx.back(), m_chainstate.CoinsTip(), STANDARD_SCRIPT_VERIFY_FLAGS);
+    int64_t nTxSigOpsCost = GetTransactionSigOpCost(*pblocktemplate->block.vtx.back(), coins_view, STANDARD_SCRIPT_VERIFY_FLAGS);
     pblocktemplate->vTxSigOpsCost.push_back(nTxSigOpsCost);
     nBlockSigOpsCost += nTxSigOpsCost;
 
