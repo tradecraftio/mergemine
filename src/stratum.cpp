@@ -571,7 +571,12 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
 
     // Update the block template if the tip has changed or it's been more than 5
     // seconds and there are new transactions.
-    if (tip != g_context->chainman->ActiveChain().Tip() || (mempool.GetTransactionsUpdated() != transactions_updated_last && (GetTime() - last_update_time) > 5) || !work_templates.count(job_id))
+    CBlockIndex *tip_new = tip;
+    {
+        LOCK(g_context->chainman->GetMutex());
+        tip_new = g_context->chainman->ActiveChainstate().m_chain.Tip();
+    }
+    if (tip != tip_new || (mempool.GetTransactionsUpdated() != transactions_updated_last && (GetTime() - last_update_time) > 5) || !work_templates.count(job_id))
     {
         CTxDestination coinbase_dest = g_default_mining_address;
         if (!IsValidDestination(coinbase_dest)) {
@@ -579,7 +584,6 @@ std::string GetWorkUnit(StratumClient& client) EXCLUSIVE_LOCKS_REQUIRED(cs_strat
             wallet::ReserveMiningDestination(*g_context, coinbase_dest, error);
         }
         // Update block template
-        CBlockIndex* tip_new = g_context->chainman->ActiveChain().Tip();
         const CScript script = CScript() << OP_FALSE;
         std::unique_ptr<node::CBlockTemplate> new_work;
         new_work = node::BlockAssembler(g_context->chainman->ActiveChainstate(), &mempool).CreateNewBlock(script);
