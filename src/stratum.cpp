@@ -78,14 +78,14 @@ struct JobId : public std::array<unsigned char, 8> {
         uint64_t siphash = htole64(
             SipHashUint256(0x779210d350dae066UL, 0x828d056f89a7486aUL, hash)
         );
-        unsigned char* siphash_bytes = reinterpret_cast<unsigned char*>(&siphash);
+        const unsigned char* siphash_bytes = reinterpret_cast<const unsigned char*>(&siphash);
         std::copy(siphash_bytes, siphash_bytes + size(), begin());
     }
     explicit JobId(const BaseHash<uint256>& hash) {
         uint64_t siphash = htole64(
             CSipHasher(0x11d6a16033e584bdUL, 0x5784b7e61ca05cf2UL).Write(hash).Finalize()
         );
-        unsigned char* siphash_bytes = reinterpret_cast<unsigned char*>(&siphash);
+        const unsigned char* siphash_bytes = reinterpret_cast<const unsigned char*>(&siphash);
         std::copy(siphash_bytes, siphash_bytes + size(), begin());
     }
     explicit JobId(const std::string& hex) {
