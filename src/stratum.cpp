@@ -1375,7 +1375,7 @@ static void stratum_read_cb(bufferevent *bev, void *ctx)
     // If required, send new work to the client.
     if (client.m_send_work) {
         if (!client.m_authorized) {
-            double diff = DEFAULT_MINING_DIFFICULTY;
+            double diff = g_min_difficulty;
             if (g_context && g_context->chainman) {
                 LOCK(g_context->chainman->GetMutex());
                 CBlockIndex* tip = g_context->chainman->ActiveChain().Tip();
