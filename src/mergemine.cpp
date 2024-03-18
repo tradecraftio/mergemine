@@ -512,7 +512,7 @@ static UniValue stratum_mining_aux_notify(AuxWorkServer& server, const UniValue&
     // it out.  Receipt of new mining.aux.notify message indicates that a block
     // has been solved.
     if (g_second_stage.count(server.aux_pow_path)) {
-        LogPrint(BCLog::MERGEMINE, "Removing unsolved second-stage work unit for chain 0x%s", HexStr(server.aux_pow_path));
+        LogPrint(BCLog::MERGEMINE, "Removing second-stage work unit for chain 0x%s", HexStr(server.aux_pow_path));
         g_second_stage.erase(server.aux_pow_path);
     }
 
