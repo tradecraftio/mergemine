@@ -441,7 +441,7 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
     const auto res3 = ImprovesFeerateDiagram(*changeset);
     BOOST_CHECK(res3.has_value());
     BOOST_CHECK(res3.value().first == DiagramCheckError::UNCALCULABLE);
-    BOOST_CHECK(res3.value().second == strprintf("%s has 2 ancestors, max 1 allowed", tx5->GetHash().GetHex()));
+    BOOST_CHECK(res3.value().second == strprintf("%s has both ancestor and descendant, exceeding cluster limit of 2", tx2->GetHash().GetHex()));
 }
 
 BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)

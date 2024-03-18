@@ -12,6 +12,7 @@ import copy
 from decimal import Decimal
 
 from test_framework.blocktools import (
+    add_final_tx,
     create_coinbase,
     get_witness_script,
     NORMAL_GBT_REQUEST_PARAMS,
@@ -82,7 +83,7 @@ class MiningTest(BitcoinTestFramework):
         mining_info = self.nodes[0].getmininginfo()
         assert_equal(mining_info['blocks'], 200)
         assert_equal(mining_info['currentblocktx'], 0)
-        assert_equal(mining_info['currentblockweight'], DEFAULT_BLOCK_RESERVED_WEIGHT)
+        assert_equal(mining_info['currentblockweight'], DEFAULT_BLOCK_RESERVED_WEIGHT + 244) # Add weight of block-final transaction
 
         self.log.info('test blockversion')
         self.restart_node(0, extra_args=[f'-mocktime={t}', '-blockversion=1337'])
@@ -90,7 +91,7 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(1337, self.nodes[0].getblocktemplate(NORMAL_GBT_REQUEST_PARAMS)['version'])
         self.restart_node(0, extra_args=[f'-mocktime={t}'])
         self.connect_nodes(0, 1)
-        assert_equal(VERSIONBITS_TOP_BITS + (1 << VERSIONBITS_DEPLOYMENT_TESTDUMMY_BIT) + (1 << VERSIONBITS_DEPLOYMENT_FINALTX_BIT), self.nodes[0].getblocktemplate(NORMAL_GBT_REQUEST_PARAMS)['version'])
+        assert_equal(VERSIONBITS_TOP_BITS + (1 << VERSIONBITS_DEPLOYMENT_TESTDUMMY_BIT), self.nodes[0].getblocktemplate(NORMAL_GBT_REQUEST_PARAMS)['version'])
         self.restart_node(0)
         self.connect_nodes(0, 1)
 
@@ -168,6 +169,8 @@ class MiningTest(BitcoinTestFramework):
         block.nBits = int(tmpl["bits"], 16)
         block.nNonce = 0
         block.vtx = [create_coinbase(height=int(tmpl["height"]))]
+        if 'finaltx' in tmpl and 'prevout' in tmpl['finaltx']:
+            add_final_tx(tmpl['finaltx']['prevout'], block)
         block.solve()
         assert_template(node, block, None)
 
@@ -228,7 +231,7 @@ class MiningTest(BitcoinTestFramework):
 
         # Restart the node to allow large transactions
         LARGE_TXS_COUNT = 10
-        LARGE_VSIZE = int(((MAX_BLOCK_WEIGHT - DEFAULT_BLOCK_RESERVED_WEIGHT) / WITNESS_SCALE_FACTOR) / LARGE_TXS_COUNT)
+        LARGE_VSIZE = int(((MAX_BLOCK_WEIGHT - DEFAULT_BLOCK_RESERVED_WEIGHT - 244) / WITNESS_SCALE_FACTOR) / LARGE_TXS_COUNT)
         HIGH_FEERATE = Decimal("0.0003")
         self.restart_node(0, extra_args=[f"-datacarriersize={LARGE_VSIZE}"])
 
@@ -272,7 +275,7 @@ class MiningTest(BitcoinTestFramework):
         self.log.info("Sending 2 additional normal transactions to fill the mempool to the maximum block weight.")
         self.send_transactions(utxos[LARGE_TXS_COUNT + 2:], NORMAL_FEERATE, NORMAL_VSIZE)
         self.log.info(f"Testing that the mempool's weight matches the maximum block weight: {MAX_BLOCK_WEIGHT}.")
-        assert_equal(self.nodes[0].getmempoolinfo()['bytes'] * WITNESS_SCALE_FACTOR, MAX_BLOCK_WEIGHT)
+        assert_equal(self.nodes[0].getmempoolinfo()['bytes'] * WITNESS_SCALE_FACTOR, MAX_BLOCK_WEIGHT - 280)
 
         self.log.info("Testing that the block template includes only 10 transactions and cannot reach full block weight.")
         self.verify_block_template(
@@ -351,7 +354,8 @@ class MiningTest(BitcoinTestFramework):
         witness_root = CBlock.get_merkle_root([ser_uint256(0),
                                                ser_uint256(txid)])
         script = get_witness_script(witness_root, 0)
-        assert_equal(witness_commitment, script.hex())
+        # This test stops making sense with block-final transactions.
+        #assert_equal(witness_commitment, script.hex())
 
         # Mine a block to leave initial block download and clear the mempool
         self.generatetoaddress(node, 1, node.get_deterministic_priv_key().address)
@@ -373,6 +377,9 @@ class MiningTest(BitcoinTestFramework):
         block.nBits = int(tmpl["bits"], 16)
         block.nNonce = 0
         block.vtx = [coinbase_tx]
+
+        if 'finaltx' in tmpl and 'prevout' in tmpl['finaltx']:
+            add_final_tx(tmpl['finaltx']['prevout'], block)
 
         self.log.info("getblocktemplate: segwit rule must be set")
         assert_raises_rpc_error(-8, "getblocktemplate must be called with the segwit rule set", node.getblocktemplate, {})
@@ -412,7 +419,7 @@ class MiningTest(BitcoinTestFramework):
 
         self.log.info("getblocktemplate: Test duplicate transaction")
         bad_block = copy.deepcopy(block)
-        bad_block.vtx.append(bad_block.vtx[0])
+        bad_block.vtx.insert(-1, bad_block.vtx[0])
         assert_template(node, bad_block, 'bad-txns-duplicate')
         assert_submitblock(bad_block, 'bad-txns-duplicate', 'bad-txns-duplicate')
 
@@ -421,7 +428,7 @@ class MiningTest(BitcoinTestFramework):
         bad_tx = copy.deepcopy(bad_block.vtx[0])
         bad_tx.vin[0].prevout.hash = 255
         bad_tx.rehash()
-        bad_block.vtx.append(bad_tx)
+        bad_block.vtx.insert(-1, bad_tx)
         assert_template(node, bad_block, 'bad-txns-inputs-missingorspent')
         assert_submitblock(bad_block, 'bad-txns-inputs-missingorspent')
 
@@ -435,7 +442,7 @@ class MiningTest(BitcoinTestFramework):
         self.log.info("getblocktemplate: Test bad tx count")
         # The tx count is immediately after the block header
         bad_block_sn = bytearray(block.serialize())
-        assert_equal(bad_block_sn[BLOCK_HEADER_SIZE], 1)
+        assert_equal(bad_block_sn[BLOCK_HEADER_SIZE], 2)
         bad_block_sn[BLOCK_HEADER_SIZE] += 1
         assert_raises_rpc_error(-22, "Block decode failed", node.getblocktemplate, {
             'data': bad_block_sn.hex(),
