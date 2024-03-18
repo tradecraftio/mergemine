@@ -83,7 +83,7 @@ class MiningTest(BitcoinTestFramework):
         mining_info = self.nodes[0].getmininginfo()
         assert_equal(mining_info['blocks'], 200)
         assert_equal(mining_info['currentblocktx'], 0)
-        assert_equal(mining_info['currentblockweight'], DEFAULT_BLOCK_RESERVED_WEIGHT + 244) # Add weight of block-final transaction
+        assert_equal(mining_info['currentblockweight'], DEFAULT_BLOCK_RESERVED_WEIGHT + 388) # Add weight of block-final transaction
 
         self.log.info('test blockversion')
         self.restart_node(0, extra_args=[f'-mocktime={t}', '-blockversion=1337'])
@@ -231,7 +231,7 @@ class MiningTest(BitcoinTestFramework):
 
         # Restart the node to allow large transactions
         LARGE_TXS_COUNT = 10
-        LARGE_VSIZE = int(((MAX_BLOCK_WEIGHT - DEFAULT_BLOCK_RESERVED_WEIGHT - 244) / WITNESS_SCALE_FACTOR) / LARGE_TXS_COUNT)
+        LARGE_VSIZE = int(((MAX_BLOCK_WEIGHT - DEFAULT_BLOCK_RESERVED_WEIGHT - 388) / WITNESS_SCALE_FACTOR) / LARGE_TXS_COUNT)
         HIGH_FEERATE = Decimal("0.0003")
         self.restart_node(0, extra_args=[f"-datacarriersize={LARGE_VSIZE}"])
 
@@ -275,7 +275,7 @@ class MiningTest(BitcoinTestFramework):
         self.log.info("Sending 2 additional normal transactions to fill the mempool to the maximum block weight.")
         self.send_transactions(utxos[LARGE_TXS_COUNT + 2:], NORMAL_FEERATE, NORMAL_VSIZE)
         self.log.info(f"Testing that the mempool's weight matches the maximum block weight: {MAX_BLOCK_WEIGHT}.")
-        assert_equal(self.nodes[0].getmempoolinfo()['bytes'] * WITNESS_SCALE_FACTOR, MAX_BLOCK_WEIGHT - 280)
+        assert_equal(self.nodes[0].getmempoolinfo()['bytes'] * WITNESS_SCALE_FACTOR, MAX_BLOCK_WEIGHT - 400)
 
         self.log.info("Testing that the block template includes only 10 transactions and cannot reach full block weight.")
         self.verify_block_template(

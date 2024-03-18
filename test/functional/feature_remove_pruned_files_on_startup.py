@@ -25,12 +25,12 @@ class FeatureRemovePrunedFilesOnStartupTest(BitcoinTestFramework):
         rev0 = self.nodes[0].blocks_path / "rev00000.dat"
         blk1 = self.nodes[0].blocks_path / "blk00001.dat"
         rev1 = self.nodes[0].blocks_path / "rev00001.dat"
-        self.mine_batches(600)
+        self.mine_batches(550)
 
         self.log.info("Open some files to check that this may delay deletion")
         fd1 = open(blk0, "rb")
         fd2 = open(rev1, "rb")
-        self.nodes[0].pruneblockchain(450)
+        self.nodes[0].pruneblockchain(400)
 
         # Windows systems will not remove files with an open fd
         if platform.system() != 'Windows':
