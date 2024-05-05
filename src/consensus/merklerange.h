@@ -43,7 +43,7 @@
 // [2]: https://github.com/mimblewimble/grin/blob/master/doc/mmr.md
 // [3]: https://neptune.cash/learn/mmr/
 
-// Note: many implementations of MMR use Blake2b as the hash function.  This
+// Note: Many implementations of MMR use Blake2b as the hash function.  This
 //       implementation uses SHA256, which is the same hash function used by
 //       the rest of the Bitcoin codebase.  Blake2b is in principle a faster
 //       hash function, but the factor that dominates in reality is that most
