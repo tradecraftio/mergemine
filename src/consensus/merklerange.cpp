@@ -39,10 +39,4 @@ uint256 MmrAccumulator::GetHash() const {
     return hash;
 }
 
-void swap(MmrAccumulator& lhs, MmrAccumulator& rhs) {
-    using std::swap; // for ADL
-    swap(lhs.leaf_count, rhs.leaf_count);
-    swap(lhs.peaks, rhs.peaks);
-}
-
 // End of File
