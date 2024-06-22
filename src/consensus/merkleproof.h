@@ -1239,7 +1239,7 @@ struct MerkleBranch
 };
 
 /* Defined outside the class for argument-dpendent lookup. */
-void swap(MerkleBranch& lhs, MerkleBranch& rhs) noexcept {
+inline void swap(MerkleBranch& lhs, MerkleBranch& rhs) noexcept {
     using std::swap; // enable ADL
     swap(lhs.m_branch, rhs.m_branch);
     swap(lhs.m_vpath, rhs.m_vpath);
