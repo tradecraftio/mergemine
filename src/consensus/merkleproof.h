@@ -1204,22 +1204,22 @@ struct MerkleBranch
     typedef std::vector<bool> vpath_type;
     vpath_type m_vpath;
 
-    constexpr MerkleBranch(branch_type&& branch, vpath_type&& vpath) noexcept : m_branch(branch), m_vpath(vpath) { }
-    constexpr MerkleBranch(const std::vector<unsigned char>& data) { setvch(data); }
+    MerkleBranch(branch_type&& branch, vpath_type&& vpath) noexcept : m_branch(branch), m_vpath(vpath) { }
+    MerkleBranch(const std::vector<unsigned char>& data) { setvch(data); }
 
     /* Default constructors and assignment operators are fine */
-    constexpr MerkleBranch() noexcept = default;
-    constexpr MerkleBranch(const MerkleBranch&) = default;
-    constexpr MerkleBranch(MerkleBranch&&) noexcept = default;
-    constexpr MerkleBranch& operator=(const MerkleBranch&) = default;
-    constexpr MerkleBranch& operator=(MerkleBranch&&) noexcept = default;
+    MerkleBranch() noexcept = default;
+    MerkleBranch(const MerkleBranch&) = default;
+    MerkleBranch(MerkleBranch&&) noexcept = default;
+    MerkleBranch& operator=(const MerkleBranch&) = default;
+    MerkleBranch& operator=(MerkleBranch&&) noexcept = default;
 
-    constexpr void clear() noexcept {
+    void clear() noexcept {
         m_branch.clear();
         m_vpath.clear();
     }
 
-    constexpr bool operator==(const MerkleBranch& other) const
+    bool operator==(const MerkleBranch& other) const
       { return m_branch == other.m_branch
             && m_vpath == other.m_vpath; }
 
@@ -1239,7 +1239,7 @@ struct MerkleBranch
 };
 
 /* Defined outside the class for argument-dpendent lookup. */
-constexpr void swap(MerkleBranch& lhs, MerkleBranch& rhs) noexcept {
+void swap(MerkleBranch& lhs, MerkleBranch& rhs) noexcept {
     using std::swap; // enable ADL
     swap(lhs.m_branch, rhs.m_branch);
     swap(lhs.m_vpath, rhs.m_vpath);
