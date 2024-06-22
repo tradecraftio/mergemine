@@ -251,17 +251,17 @@ protected:
  * Equality and relational operators that couldn't have been defined inside
  * MerkleNode because MerkleNodeReference was not defined.
  */
-bool operator==(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator==(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() == rhs.GetCode()); }
-bool operator!=(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator!=(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() != rhs.GetCode()); }
-bool operator<(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator<(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() < rhs.GetCode()); }
-bool operator<=(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator<=(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() <= rhs.GetCode()); }
-bool operator>=(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator>=(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() >= rhs.GetCode()); }
-bool operator>(MerkleNode lhs, const MerkleNodeReference& rhs)
+inline bool operator>(MerkleNode lhs, const MerkleNodeReference& rhs)
   { return (lhs.GetCode() > rhs.GetCode()); }
 
 /*
@@ -477,7 +477,7 @@ protected:
     template<class T, class Alloc> friend class std::vector;
 };
 
-MerkleNodeIterator operator+(MerkleNodeIterator::difference_type n, const MerkleNodeIterator& x)
+inline MerkleNodeIterator operator+(MerkleNodeIterator::difference_type n, const MerkleNodeIterator& x)
   { return x + n; }
 
 /* Have the compiler ensure that MerkleNodeIterator meets all the requirements
@@ -584,7 +584,7 @@ protected:
     template<class T, class Alloc> friend class std::vector;
 };
 
-MerkleNodeConstIterator operator+(MerkleNodeConstIterator::difference_type n, const MerkleNodeConstIterator& x)
+inline MerkleNodeConstIterator operator+(MerkleNodeConstIterator::difference_type n, const MerkleNodeConstIterator& x)
   { return x + n; }
 
 /* Have the compiler ensure that MerkleNodeConstIterator meets all the
@@ -1254,7 +1254,7 @@ struct MerkleProof
 };
 
 /* Defined outside the class for argument-dpendent lookup. */
-void swap(MerkleProof& lhs, MerkleProof& rhs) noexcept {
+inline void swap(MerkleProof& lhs, MerkleProof& rhs) noexcept {
     using std::swap; // enable ADL
     swap(lhs.m_path, rhs.m_path);
     swap(lhs.m_skip, rhs.m_skip);
@@ -1326,7 +1326,7 @@ struct MerkleTree
 };
 
 /* Defined outside the class for argument-dpendent lookup. */
-void swap(MerkleTree& lhs, MerkleTree& rhs) noexcept {
+inline void swap(MerkleTree& lhs, MerkleTree& rhs) noexcept {
     using std::swap; // enable ADL
     swap(lhs.m_proof, rhs.m_proof);
     swap(lhs.m_verify, rhs.m_verify);
