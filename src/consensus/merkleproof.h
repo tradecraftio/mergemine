@@ -106,15 +106,27 @@ public:
         return *this;
     }
 
-    /* Equality & relational operators.
+    /* Equality operators. */
+    bool operator==(MerkleNode other) const
+      { return (m_code == other.m_code); }
+    bool operator!=(MerkleNode other) const
+      { return !(*this == other); }
+
+    /* Relational operators.
      *
      * At first glance it might not make sense to include relational operators
      * except for obscure reasons such as STL container compatibility, however
      * the encoding scheme was chosen to preserve list ordering relationships
      * when differing proofs of the same underlying tree structure are
      * compared. */
-    bool operator==(const MerkleNode& other) const = default;
-    auto operator<=>(const MerkleNode& other) const = default;
+    bool operator<(MerkleNode other) const
+      { return (m_code < other.m_code); }
+    bool operator<=(MerkleNode other) const
+      { return !(other < *this); }
+    bool operator>=(MerkleNode other) const
+      { return !(*this < other); }
+    bool operator>(MerkleNode other) const
+      { return (other < *this); }
 
     /* Needs access to m_{left,right}_from_code and _encode(). */
     friend struct MerkleNodeReference;
@@ -693,9 +705,40 @@ public:
         return *this;
     }
 
-    /* Equality & relational operators. */
-    bool operator==(const vector &other) const = default;
-    auto operator<=>(const vector &other) const = default;
+    /* Equality operators. */
+    bool operator==(const vector &other) const
+      { return ((m_count == other.m_count) && (m_data == other.m_data)); }
+    bool operator!=(const vector &other) const
+      { return !(*this == other); }
+
+    /* Relational operators. */
+    bool operator<(const vector &other) const {
+        /* Compare packed node representations lexigraphically. */
+        auto lhs = m_data.begin();
+        auto rhs = other.m_data.begin();
+        while (lhs != m_data.end() && rhs != other.m_data.end()) {
+            if (*lhs < *rhs)
+                return true;
+            if (*rhs < *lhs)
+                return false;
+            ++lhs;
+            ++rhs;
+        }
+        if (lhs == m_data.end() && rhs != other.m_data.end())
+            return true;
+        if (lhs != m_data.end() && rhs == other.m_data.end())
+            return false;
+        /* Edge case: if one vector is a prefix of the other, with the extra
+         * elements being zero coded, it is possible that their m_data vectors
+         * will match but have different m_count values. */
+        return (m_count < other.m_count);
+    }
+    bool operator<=(const vector &other) const
+      { return !(other < *this); }
+    bool operator>=(const vector &other) const
+      { return !(*this < other); }
+    bool operator>(const vector &other) const
+      { return (other < *this); }
 
     /* Clear & assign methods. */
     void clear() noexcept {
