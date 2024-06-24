@@ -69,16 +69,16 @@ struct MmrAccumulator {
     //! bits in the binary representation of `leaf_count`.
     std::vector<uint256> peaks;
 
-    constexpr MmrAccumulator() noexcept : leaf_count(0) {}
-    constexpr MmrAccumulator(size_t leaf_count, const std::vector<uint256>& peaks)
+    MmrAccumulator() noexcept : leaf_count(0) {}
+    MmrAccumulator(size_t leaf_count, const std::vector<uint256>& peaks)
         : leaf_count(leaf_count), peaks(peaks) { ASSERT_IF_DEBUG(peaks.size() == POPCOUNT(leaf_count)); }
-    constexpr MmrAccumulator(size_t leaf_count, std::vector<uint256>&& peaks) noexcept
+    MmrAccumulator(size_t leaf_count, std::vector<uint256>&& peaks) noexcept
         : leaf_count(leaf_count), peaks(peaks) { ASSERT_IF_DEBUG(peaks.size() == POPCOUNT(leaf_count)); }
 
     //! Returns true if the accumulator is empty.
-    constexpr bool empty() const { return leaf_count == 0; }
+    bool empty() const { return leaf_count == 0; }
     //! Returns the number of leaf nodes in the tree.
-    constexpr size_t size() const { return leaf_count; }
+    size_t size() const { return leaf_count; }
 
     //! Add a new leaf node to the tree.
     MmrAccumulator& Append(const uint256& leaf);
@@ -117,7 +117,7 @@ struct MmrAccumulator {
 };
 
 /* Defined outside the class for argument-dpendent lookup. */
-constexpr void swap(MmrAccumulator& lhs, MmrAccumulator& rhs) noexcept {
+inline void swap(MmrAccumulator& lhs, MmrAccumulator& rhs) noexcept {
     using std::swap; // for ADL
     swap(lhs.leaf_count, rhs.leaf_count);
     swap(lhs.peaks, rhs.peaks);
