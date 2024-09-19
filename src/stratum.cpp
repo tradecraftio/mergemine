@@ -1546,6 +1546,12 @@ void BlockWatcher()
             break;
         }
 
+        CBlockIndex* tip = nullptr;
+        if (g_context && g_context->chainman) {
+            LOCK(g_context->chainman->GetMutex());
+            tip = g_context->chainman->ActiveChain().Tip();
+        }
+
         // Either new block, updated transactions, or updated merge-mining
         // commitments.  Regardless, send updated work to miners.
         for (auto& subscription : subscriptions) {
@@ -1572,11 +1578,6 @@ void BlockWatcher()
             // there could be more than one miner that have already received an
             // update, however.
             if (!second_stage) {
-                CBlockIndex* tip = nullptr;
-                if (g_context && g_context->chainman) {
-                    LOCK(g_context->chainman->GetMutex());
-                    tip = g_context->chainman->ActiveChain().Tip();
-                }
                 std::map<ChainId, AuxWork> mmwork = GetMergeMineWork(client.m_mmauth);
                 uint256 mmroot = AuxWorkMerkleRoot(mmwork);
                 if ((client.m_last_tip == tip) && client.m_mmwork.count(JobId(mmroot))) {
