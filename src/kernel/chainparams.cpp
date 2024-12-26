@@ -206,7 +206,7 @@ public:
         };
 
         /* The Tradecraft/Freicoin main net. */
-        default_aux_pow_path = ChainId(uint256S("0x632938ec752e63b7f63cdd9a16b336c6c5cefbaad66278e402ce59d706f57ff6"));
+        default_aux_pow_path = ChainId(uint256{"632938ec752e63b7f63cdd9a16b336c6c5cefbaad66278e402ce59d706f57ff6"});
     }
 };
 
@@ -421,7 +421,7 @@ public:
         };
 
         /* The Tradecraft/Freicoin test net. */
-        default_aux_pow_path = ChainId(uint256S("0xe99fc44bfacee2f7e28d135845ff8a385d6d31353928d5b499700f1a2ad1b18b"));
+        default_aux_pow_path = ChainId(uint256{"e99fc44bfacee2f7e28d135845ff8a385d6d31353928d5b499700f1a2ad1b18b"});
     }
 };
 
@@ -684,7 +684,7 @@ public:
         bech32_hrp = "bcrt";
 
         /* The Tradecraft/Freicoin regtest network. */
-        default_aux_pow_path = ChainId(uint256S("0xd799d41af01c1ac77e6a7793ba046a7432bb6ec250b84e2f5c6f225e05f0fc74"));
+        default_aux_pow_path = ChainId(uint256{"d799d41af01c1ac77e6a7793ba046a7432bb6ec250b84e2f5c6f225e05f0fc74"});
     }
 };
 
