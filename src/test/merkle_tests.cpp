@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(merkle_stable_branch)
 
     uint256 hashZ;
     CHash256().Write({(const unsigned char*)"z", 1}).Finalize(hashZ);
-    BOOST_CHECK(hashZ == uint256S("ca23f71f669346e53eb7679749b368c9ec09109b798ba542487224b79cd47cc2"));
+    BOOST_CHECK(hashZ == uint256{"ca23f71f669346e53eb7679749b368c9ec09109b798ba542487224b79cd47cc2"});
 
     std::vector<uint256> leaves;
     for (auto c : alphabet) {
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(merkle_stable_branch)
         leaves.push_back(hash);
     }
     BOOST_CHECK_EQUAL(leaves.size(), 22);
-    BOOST_CHECK(leaves[0] == uint256S("d8f244c159278ea8cfffcbe1c463edef33d92d11d36ac3c62efd3eb7ff3a5dbf")); // just check the first hash, of 'a'
+    BOOST_CHECK(leaves[0] == uint256{"d8f244c159278ea8cfffcbe1c463edef33d92d11d36ac3c62efd3eb7ff3a5dbf"}); // just check the first hash, of 'a'
 
     for (uint32_t i = 0; i < leaves.size(); ++i) {
         std::vector<uint256> old_branch = ComputeMerkleBranch(leaves, i);
