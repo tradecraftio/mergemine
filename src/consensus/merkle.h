@@ -11,6 +11,7 @@
 #include <uint256.h>
 
 uint256 ComputeMerkleRoot(std::vector<uint256> hashes, bool* mutated = nullptr);
+std::vector<uint256> ComputeMerklePath(const std::vector<uint256>& leaves, uint32_t position);
 uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& branch, uint32_t position);
 
 /*
