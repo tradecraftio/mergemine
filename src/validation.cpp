@@ -2241,9 +2241,15 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
                     result = mandatory_result;
                 }
             }
-
             // MANDATORY flag failures correspond to
-            // TxValidationResult::TX_CONSENSUS.
+            // TxValidationResult::TX_CONSENSUS. Because CONSENSUS
+            // failures are the most serious case of validation
+            // failures, we may need to consider using
+            // RECENT_CONSENSUS_CHANGE for any script failure that
+            // could be due to non-upgraded nodes which we may want to
+            // support, to avoid splitting the network (but this
+            // depends on the details of how net_processing handles
+            // such errors).
             return state.Invalid(TxValidationResult::TX_CONSENSUS, strprintf("mandatory-script-verify-flag-failed (%s)", ScriptErrorString(result->first)), result->second);
         }
     }
